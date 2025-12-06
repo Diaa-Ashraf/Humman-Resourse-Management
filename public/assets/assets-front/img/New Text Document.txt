@@ -1,0 +1,1618 @@
+@extends('frontend.layouts.master')
+
+@section('title')
+    Salumida - رحلتك نحو حياة صحية استثنائية
+@endsection
+
+@section('content')
+
+   <!-- Hero Section with Slider and Side Images -->
+   <section class="hero-section position-relative overflow-hidden" id="home"
+           style="background: white; min-height: 40vh; font-family: 'Cairo', sans-serif; margin-top: 80px; padding: 20px 0;">
+
+       <div class="container">
+           <div class="row g-4">
+               <!-- Side Images Section - على الشمال مع تقليل العرض -->
+               <div class="col-lg-4 col-md-5">
+                   <div class="side-images-container d-flex flex-column h-100 gap-3">
+                       <!-- Top Side Image -->
+                       <div class="side-image-item flex-fill position-relative rounded-4 overflow-hidden shadow-sm">
+                           <img src="{{ asset('assets/assets-front/img/1.jpg') }}"
+                               alt="صورة جانبية 1"
+                               class="w-100 h-100"
+                               style="object-fit: cover; height: 140px;">
+                       </div>
+
+                       <!-- Bottom Side Image -->
+                       <div class="side-image-item flex-fill position-relative rounded-4 overflow-hidden shadow-sm">
+                           <img src="{{ asset('assets/assets-front/img/2.jpg') }}"
+                               alt="صورة جانبية 2"
+                               class="w-100 h-100"
+                               style="object-fit: cover; height: 140px;">
+                       </div>
+                   </div>
+               </div>
+
+               <!-- Main Slider Section - على اليمين مع زيادة العرض -->
+               <div class="col-lg-8 col-md-7">
+                   <div class="hero-slider-container position-relative rounded-4 overflow-hidden shadow-lg w-100">
+                       <div class="swiper heroMainSwiper h-100 w-100">
+                           <div class="swiper-wrapper">
+                               <!-- Slide 1 -->
+                               <div class="swiper-slide">
+                                   <div class="position-relative w-100 h-100">
+                                       <img src="{{ asset('assets/assets-front/img/1.jpg') }}"
+                                           alt="Salumida - حياة صحية"
+                                           class="hero-slider-img w-100 h-100"
+                                           style="object-fit: cover; object-position: center; height: 280px;">
+                                   </div>
+                               </div>
+
+                               <!-- Slide 2 -->
+                               <div class="swiper-slide">
+                                   <div class="position-relative w-100 h-100">
+                                       <img src="{{ asset('assets/assets-front/img/5.jpg') }}"
+                                           alt="منتجات صحية"
+                                           class="hero-slider-img w-100 h-100"
+                                           style="object-fit: cover; object-position: center; height: 280px;">
+                                   </div>
+                               </div>
+                           </div>
+
+                           <!-- Navigation & Pagination -->
+                           <div class="swiper-button-next text-white"></div>
+                           <div class="swiper-button-prev text-white"></div>
+                           <div class="swiper-pagination"></div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+
+       <!-- Scroll Indicator -->
+       <div class="position-absolute bottom-0 start-50 translate-middle-x mb-4 z-2">
+           <div class="scroll-indicator text-dark">
+               <i class="fas fa-chevron-down fa-2x animate-bounce"></i>
+           </div>
+       </div>
+   </section>
+
+
+
+    <!-- Categories with Products Section -->
+    <section class="categories-section section-padding" id="categories" style="background: white; width: 100%;">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="section-title text-dark animate-slide-up display-5 fw-bold mb-3 position-relative d-inline-block px-4 py-2"
+                        style="background: linear-gradient(135deg, #06575B, #087E8B);
+                               -webkit-background-clip: text;
+                               -webkit-text-fill-color: transparent;
+                               border: 3px solid transparent;
+                               border-image: linear-gradient(135deg, #06575B, #087E8B) 1;
+                               border-radius: 50px;
+                               box-shadow: 0 4px 15px rgba(6, 87, 91, 0.15);">
+                        فئات المنتجات
+                    </h2>
+                    <p class="text-dark opacity-90 animate-slide-up lead">اكتشف مجموعتنا المتنوعة من المنتجات الصحية والرياضية</p>
+                </div>
+            </div>
+
+            @foreach($categoriesWithProducts as $category)
+            <div class="category-section mb-5">
+                <!-- Category Header -->
+                <div class="row mb-4 align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="category-title text-primary fw-bold mb-2" style="font-size: 1.8rem;">{{ $category->name }}</h3>
+                        <p class="text-dark opacity-80">{{ $category->description }}</p>
+                    </div>
+                    <div class="col-md-4 text-md-end text-center">
+                        <a href="{{ route('products.byCategory' , $category->id) }}" class="btn btn-primary px-4 py-2 rounded-pill text-white right-aligned-btn" style="display: block; width: fit-content;">
+                            عرض الكل
+                            <i class="fas fa-arrow-left ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Products Slider -->
+                @if($category->products->count() > 0)
+                <div class="position-relative">
+                    <div class="swiper categorySwiper-{{ $category->id }}">
+                        <div class="swiper-wrapper">
+                            @foreach($category->products as $product)
+                                @php
+                                    $hasActiveDiscount = !is_null($product->discount_id);
+                                    $finalPrice = $product->price;
+
+                                    if ($hasActiveDiscount && $product->discount_type === 'percentage') {
+                                        $discountValue = ($product->amount / 100) * $product->price;
+                                        if (!is_null($product->max_discount_value)) {
+                                            $discountValue = min($discountValue, $product->max_discount_value);
+                                        }
+                                        $finalPrice = max($product->price - $discountValue, 0);
+                                    }
+                                @endphp
+
+                                <div class="swiper-slide">
+                                    <div class="product-card h-100 bg-white text-dark rounded-3 shadow-sm overflow-hidden transition-all"
+                                        style="transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(6, 87, 91, 0.1); position: relative;">
+
+                                        <!-- Product Image -->
+                                        <a href="{{ route('products.details', $product->slug) }}" class="text-decoration-none d-block position-relative overflow-hidden">
+                                            <img
+                                                src="{{ asset('storage/uploads/products/' . $product->image) }}"
+                                                alt="{{ $product->name }}"
+                                                class="product-img w-100"
+                                                style="height: 200px; object-fit: cover; transition: transform 0.5s ease;"
+                                            >
+                                            <!-- Overlay Effect -->
+                                            <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300"></div>
+                                        </a>
+
+                                        <!-- Product Info -->
+                                        <div class="product-info p-3">
+                                            <h6 class="product-title fw-bold mb-2 text-dark">
+                                                <a href="{{ route('products.details', $product->slug) }}" class="text-dark text-decoration-none">
+                                                    {{ Str::limit($product->name, 40) }}
+                                                </a>
+                                            </h6>
+
+                                            <!-- Rating -->
+                                            <div class="product-rating mb-2 text-warning small">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    <i class="fas fa-star{{ $i > 4.5 ? '-half-alt' : '' }}"></i>
+                                                @endfor
+                                                <span class="text-dark ms-1">(4.5)</span>
+                                            </div>
+
+                                            <!-- Price & Button -->
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <div>
+                                                    @if($hasActiveDiscount)
+                                                        <span class="product-price text-primary fw-bold">
+                                                            {{ number_format($finalPrice, 0) }}
+                                                            <span class="small text-dark">جنيه</span>
+                                                        </span>
+                                                        <del class="text-muted small ms-2 d-block">
+                                                            {{ number_format($product->price, 0) }} جنيه
+                                                        </del>
+                                                    @else
+                                                        <span class="product-price text-dark fw-bold">
+                                                            {{ number_format($product->price, 0) }}
+                                                            <span class="small text-dark">جنيه</span>
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <button
+                                                    class="btn btn-primary btn-sm px-3 py-2 rounded-pill fw-bold add-to-cart-btn"
+                                                    data-product-id="{{ $product->id }}"
+                                                    data-product-name="{{ $product->name }}"
+                                                    data-product-price="{{ $finalPrice }}"
+                                                    data-product-image="{{ asset('storage/uploads/products/' . $product->image) }}"
+                                                >
+                                                    أضف
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="swiper-button-next category-next-{{ $category->id }}"></div>
+                        <div class="swiper-button-prev category-prev-{{ $category->id }}"></div>
+                    </div>
+                </div>
+                @else
+                <div class="text-center py-4">
+                    <p class="text-dark opacity-70">لا توجد منتجات في هذه الفئة حالياً.</p>
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </section>
+
+    <!-- Menu Advertisement Section -->
+    <section class="menu-advertisement-section py-5" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); width: 100%;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="text-dark fw-bold mb-3 display-6">🍽️ عروض الوجبات الصحية!</h3>
+                    <p class="text-dark mb-0 lead">احصل على خصومات تصل إلى 20% على منتجات المنيو</p>
+                </div>
+                <div class="col-md-4 text-md-end text-center">
+                    <a href="#menu-products" class="btn btn-primary btn-lg px-4 py-3 rounded-pill fw-bold text-white right-aligned-btn shadow-lg">
+                        تصفح الوجبات الآن
+                        <i class="fas fa-utensils ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Products Grid Section - تصميم المطاعم -->
+    @if(isset($menuProducts) && count($menuProducts) > 0)
+    <section class="menu-products-section section-padding" id="menu-products" style="background: #f8f9fa; width: 100%;">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-md-8">
+                    <h2 class="section-title text-dark animate-slide-up display-5 fw-bold mb-3 position-relative d-inline-block px-4 py-2"
+                        style="background: linear-gradient(135deg, #06575B, #087E8B);
+                               -webkit-background-clip: text;
+                               -webkit-text-fill-color: transparent;
+                               border: 3px solid transparent;
+                               border-image: linear-gradient(135deg, #06575B, #087E8B) 1;
+                               border-radius: 50px;
+                               box-shadow: 0 4px 15px rgba(6, 87, 91, 0.15);">
+                        {{ $activeMenu->name ?? 'قائمة الوجبات الصحية' }}
+                    </h2>
+                    <p class="text-dark animate-slide-up lead">
+                        {{ $activeMenu->description ?? 'استمتع بأشهى الوجبات الصحية المحضرة بعناية' }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end text-center animate-slide-up">
+                    <a href="{{ route('menus.index') }}" class="btn btn-primary px-4 py-2 rounded-pill text-white right-aligned-btn" style="display: block; width: fit-content;">
+                        عرض جميع الوجبات
+                        <i class="fas fa-arrow-left ms-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                @foreach($menuProducts as $product)
+                    @php
+                        $hasActiveDiscount = !is_null($product->discount_id);
+                        $finalPrice = $product->price;
+
+                        if ($hasActiveDiscount && $product->discount_type === 'percentage') {
+                            $discountValue = ($product->amount / 100) * $product->price;
+                            if (!is_null($product->max_discount_value)) {
+                                $discountValue = min($discountValue, $product->max_discount_value);
+                            }
+                            $finalPrice = max($product->price - $discountValue, 0);
+                        }
+                    @endphp
+
+                    <!-- تصميم بطاقة المنيو -->
+                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 mb-4">
+                        <div class="menu-card h-100 bg-white text-dark rounded-3 shadow-lg overflow-hidden transition-all position-relative"
+                            style="transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(6, 87, 91, 0.1);">
+
+                            @if($hasActiveDiscount)
+                            <div class="position-absolute top-0 start-0 m-2 z-3">
+                                <span class="badge bg-danger px-2 py-1 rounded-pill fw-bold small shadow-sm">خصم {{ $product->amount }}%</span>
+                            </div>
+                            @endif
+
+                            <!-- Product Image -->
+                            <div class="position-relative overflow-hidden">
+                                <img src="{{ asset('storage/uploads/products/' . $product->image) }}"
+                                    alt="{{ $product->name }}"
+                                    class="menu-img rounded-top w-100"
+                                    style="height: 180px; object-fit: cover; transition: transform 0.5s ease;">
+                                <!-- Overlay Effect -->
+                                <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity duration-300"></div>
+                            </div>
+
+                            <div class="menu-info p-3">
+                                <!-- Product Name -->
+                                <h5 class="menu-title text-dark fw-bold mb-2">
+                                    {{ Str::limit($product->name, 35) }}
+                                </h5>
+
+                                <!-- Short Description -->
+                                <p class="text-dark small mb-3" style="min-height: 40px;">
+                                    {{ Str::limit($product->short_description, 50) }}
+                                </p>
+
+                                <!-- Price -->
+                                <div class="menu-price mb-3">
+                                    @if($hasActiveDiscount)
+                                        <div class="final-price mb-1">
+                                            <span class="text-primary fw-bold fs-5">
+                                                {{ number_format($finalPrice, 0) }}
+                                                <span class="small text-dark">جنيه</span>
+                                            </span>
+                                        </div>
+                                        <div class="original-price">
+                                            <del class="text-dark opacity-75 small">
+                                                {{ number_format($product->price, 0) }} جنيه
+                                            </del>
+                                        </div>
+                                    @else
+                                        <div class="final-price">
+                                            <span class="text-dark fw-bold fs-5">
+                                                {{ number_format($product->price, 0) }}
+                                                <span class="small text-dark">جنيه</span>
+                                            </span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <!-- Add to Cart Button -->
+                                <button class="btn btn-primary btn-sm w-100 py-2 rounded-pill fw-bold add-to-cart-btn"
+                                        data-product-id="{{ $product->id }}"
+                                        data-product-name="{{ $product->name }}"
+                                        data-product-price="{{ $finalPrice }}"
+                                        data-product-image="{{ asset('storage/uploads/products/' . $product->image) }}">
+                                    أضف إلى السلة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+    @endif
+
+    <!-- Services Section -->
+    <section class="services-section section-padding" id="services" style="background: white; width: 100%;">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="section-title text-dark animate-slide-up display-5 fw-bold mb-3 position-relative d-inline-block px-4 py-2"
+                        style="background: linear-gradient(135deg, #06575B, #087E8B);
+                               -webkit-background-clip: text;
+                               -webkit-text-fill-color: transparent;
+                               border: 3px solid transparent;
+                               border-image: linear-gradient(135deg, #06575B, #087E8B) 1;
+                               border-radius: 50px;
+                               box-shadow: 0 4px 15px rgba(6, 87, 91, 0.15);">
+                        خدماتنا المتكاملة
+                    </h2>
+                    <p class="text-dark opacity-90 animate-slide-up lead">نقدم لك مجموعة شاملة من الخدمات الصحية والرياضية</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Service 1 -->
+                <div class="col-lg-4 col-md-6 animate-slide-up">
+                    <div class="service-card text-center bg-white rounded-3 p-4 shadow-sm h-100 transition-all position-relative"
+                         style="border: 2px solid rgba(6, 87, 91, 0.1); transition: all 0.3s ease;">
+                        <div class="service-icon mb-3">
+                            <i class="fas fa-user-md fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="service-title text-primary fw-bold mb-3">استشارات طبية متخصصة</h4>
+                        <p class="text-dark opacity-80">
+                            استشارات طبية مع أطباء متخصصين في التغذية واللياقة البدنية لتخطيط برنامجك الصحي
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="col-lg-4 col-md-6 animate-slide-up" style="animation-delay: 0.1s;">
+                    <div class="service-card text-center bg-white rounded-3 p-4 shadow-sm h-100 transition-all position-relative"
+                         style="border: 2px solid rgba(6, 87, 91, 0.1); transition: all 0.3s ease;">
+                        <div class="service-icon mb-3">
+                            <i class="fas fa-dumbbell fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="service-title text-primary fw-bold mb-3">تقييم اللياقة البدنية</h4>
+                        <p class="text-dark opacity-80">
+                            تقييم شامل لمستوى لياقتك البدنية وتحديد الأهداف المناسبة لك
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Service 3 -->
+                <div class="col-lg-4 col-md-6 animate-slide-up" style="animation-delay: 0.2s;">
+                    <div class="service-card text-center bg-white rounded-3 p-4 shadow-sm h-100 transition-all position-relative"
+                         style="border: 2px solid rgba(6, 87, 91, 0.1); transition: all 0.3s ease;">
+                        <div class="service-icon mb-3">
+                            <i class="fas fa-laptop-medical fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="service-title text-primary fw-bold mb-3">كوتشينج أونلاين</h4>
+                        <p class="text-dark opacity-80">
+                            جلسات كوتشينج وتدريب عن بعد مع أفضل المدربين المتخصصين
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Premium Packages Section - Redesigned -->
+    <section class="premium-packages-section section-padding" id="packages" style="background: linear-gradient(135deg, #06575B, #087E8B); width: 100%;">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="display-3 fw-bold text-white mb-3 animate-slide-up">🎯 باقاتنا الاستثنائية</h2>
+                    <p class="lead text-white opacity-90 animate-slide-up" style="font-size: 1.4rem;">
+                        اختر باقتك المفضلة وابدأ رحلتك نحو حياة صحية استثنائية
+                    </p>
+                </div>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- الباقة الأساسية -->
+                <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+                    <div class="package-card modern-card text-center p-0 rounded-4 shadow-2xl h-100 position-relative overflow-hidden"
+                         style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+
+                        <!-- Card Header -->
+                        <div class="card-header py-4 position-relative" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                            <div class="package-badge position-absolute top-0 start-50 translate-middle mt-3">
+                                <span class="badge bg-white text-success px-3 py-2 rounded-pill fw-bold shadow-lg">
+                                    للمبتدئين
+                                </span>
+                            </div>
+                            <div class="package-icon mb-3">
+                                <div class="icon-wrapper bg-white rounded-circle p-3 d-inline-flex">
+                                    <i class="fas fa-seedling fa-2x text-success"></i>
+                                </div>
+                            </div>
+                            <h3 class="package-name fw-bold text-white mb-2" style="font-size: 1.8rem;">الأساسية</h3>
+                            <div class="package-price text-white">
+                                <span class="display-4 fw-bold">500</span>
+                                <span class="fs-5">جنيه/شهر</span>
+                            </div>
+                        </div>
+
+                        <!-- Features List -->
+                        <div class="card-body p-4">
+                            <ul class="package-features list-unstyled text-dark text-end mb-4">
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">تقييم لياقة بدنية شامل</span>
+                                    <i class="fas fa-check-circle text-success ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">برنامج تدريبي أسبوعي</span>
+                                    <i class="fas fa-check-circle text-success ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">نظام غذائي متوازن</span>
+                                    <i class="fas fa-check-circle text-success ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">متابعة أسبوعية</span>
+                                    <i class="fas fa-check-circle text-success ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-muted fw-medium">استشارات طبية</span>
+                                    <i class="fas fa-times text-muted ms-2 fs-5"></i>
+                                </li>
+                            </ul>
+
+                            <!-- Action Button -->
+                            <div class="card-footer border-0 bg-transparent">
+                                <a href="#" class="btn btn-success btn-lg w-100 py-3 rounded-pill fw-bold fs-5 shadow-lg">
+                                    ابدأ الآن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الباقة الفضية -->
+                <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+                    <div class="package-card modern-card text-center p-0 rounded-4 shadow-2xl h-100 position-relative overflow-hidden"
+                         style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+
+                        <!-- Popular Ribbon -->
+                        <div class="popular-ribbon position-absolute top-0 end-0 bg-primary text-white px-4 py-2 shadow-lg"
+                             style="transform: rotate(45deg) translateX(30px) translateY(-10px); z-index: 10;">
+                            <span class="fw-bold">الأكثر طلباً</span>
+                        </div>
+
+                        <!-- Card Header -->
+                        <div class="card-header py-4 position-relative" style="background: linear-gradient(135deg, #06575B, #087E8B);">
+                            <div class="package-icon mb-3">
+                                <div class="icon-wrapper bg-white rounded-circle p-3 d-inline-flex">
+                                    <i class="fas fa-star fa-2x text-primary"></i>
+                                </div>
+                            </div>
+                            <h3 class="package-name fw-bold text-white mb-2" style="font-size: 1.8rem;">الفضية</h3>
+                            <div class="package-price text-white">
+                                <span class="display-4 fw-bold">1000</span>
+                                <span class="fs-5">جنيه/شهر</span>
+                            </div>
+                        </div>
+
+                        <!-- Features List -->
+                        <div class="card-body p-4">
+                            <ul class="package-features list-unstyled text-dark text-end mb-4">
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">جميع مزايا الأساسية</span>
+                                    <i class="fas fa-check-circle text-primary ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">برنامج تدريبي متقدم</span>
+                                    <i class="fas fa-check-circle text-primary ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">نظام غذائي مخصص</span>
+                                    <i class="fas fa-check-circle text-primary ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">استشارات طبية شهرية</span>
+                                    <i class="fas fa-check-circle text-primary ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">تقارير أداء أسبوعية</span>
+                                    <i class="fas fa-check-circle text-primary ms-2 fs-5"></i>
+                                </li>
+                            </ul>
+
+                            <!-- Action Button -->
+                            <div class="card-footer border-0 bg-transparent">
+                                <a href="#" class="btn btn-primary btn-lg w-100 py-3 rounded-pill fw-bold fs-5 shadow-lg text-white">
+                                    انضم إلينا
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الباقة الذهبية -->
+                <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+                    <div class="package-card modern-card text-center p-0 rounded-4 shadow-2xl h-100 position-relative overflow-hidden"
+                         style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+
+                        <!-- Card Header -->
+                        <div class="card-header py-4 position-relative" style="background: linear-gradient(135deg, #ff9800, #ffb74d);">
+                            <div class="package-badge position-absolute top-0 start-50 translate-middle mt-3">
+                                <span class="badge bg-dark text-warning px-3 py-2 rounded-pill fw-bold shadow-lg">
+                                    أفضل قيمة
+                                </span>
+                            </div>
+                            <div class="package-icon mb-3">
+                                <div class="icon-wrapper bg-white rounded-circle p-3 d-inline-flex">
+                                    <i class="fas fa-crown fa-2x text-warning"></i>
+                                </div>
+                            </div>
+                            <h3 class="package-name fw-bold text-white mb-2" style="font-size: 1.8rem;">الذهبية</h3>
+                            <div class="package-price text-white">
+                                <span class="display-4 fw-bold">1750</span>
+                                <span class="fs-5">جنيه/شهر</span>
+                            </div>
+                        </div>
+
+                        <!-- Features List -->
+                        <div class="card-body p-4">
+                            <ul class="package-features list-unstyled text-dark text-end mb-4">
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">جميع مزايا الفضية</span>
+                                    <i class="fas fa-check-circle text-warning ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">تقييم InBody متقدم</span>
+                                    <i class="fas fa-check-circle text-warning ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">برنامج تدريبي مكثف</span>
+                                    <i class="fas fa-check-circle text-warning ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">استشارات أسبوعية</span>
+                                    <i class="fas fa-check-circle text-warning ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">كوتشينج أونلاين</span>
+                                    <i class="fas fa-check-circle text-warning ms-2 fs-5"></i>
+                                </li>
+                            </ul>
+
+                            <!-- Action Button -->
+                            <div class="card-footer border-0 bg-transparent">
+                                <a href="#" class="btn btn-warning btn-lg w-100 py-3 rounded-pill fw-bold fs-5 shadow-lg text-white">
+                                    احصل على التميز
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الباقة الماسية -->
+                <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+                    <div class="package-card modern-card text-center p-0 rounded-4 shadow-2xl h-100 position-relative overflow-hidden"
+                         style="background: linear-gradient(145deg, #ffffff, #f8f9fa);">
+
+                        <!-- VIP Ribbon -->
+                        <div class="vip-ribbon position-absolute top-0 start-0 bg-purple text-white px-4 py-2 shadow-lg"
+                             style="transform: rotate(-45deg) translateX(-30px) translateY(-10px); z-index: 10;">
+                            <span class="fw-bold">VIP</span>
+                        </div>
+
+                        <!-- Card Header -->
+                        <div class="card-header py-4 position-relative" style="background: linear-gradient(135deg, #9c27b0, #ba68c8);">
+                            <div class="package-icon mb-3">
+                                <div class="icon-wrapper bg-white rounded-circle p-3 d-inline-flex">
+                                    <i class="fas fa-gem fa-2x text-purple"></i>
+                                </div>
+                            </div>
+                            <h3 class="package-name fw-bold text-white mb-2" style="font-size: 1.8rem;">الماسية</h3>
+                            <div class="package-price text-white">
+                                <span class="display-4 fw-bold">2500</span>
+                                <span class="fs-5">جنيه/شهر</span>
+                            </div>
+                        </div>
+
+                        <!-- Features List -->
+                        <div class="card-body p-4">
+                            <ul class="package-features list-unstyled text-dark text-end mb-4">
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">جميع مزايا الذهبية</span>
+                                    <i class="fas fa-check-circle text-purple ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">تدريب شخصي مكثف</span>
+                                    <i class="fas fa-check-circle text-purple ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">توصيل وجبات صحية</span>
+                                    <i class="fas fa-check-circle text-purple ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">استشارات غير محدودة</span>
+                                    <i class="fas fa-check-circle text-purple ms-2 fs-5"></i>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center justify-content-end">
+                                    <span class="feature-text text-dark fw-medium">متابعة 24/7</span>
+                                    <i class="fas fa-check-circle text-purple ms-2 fs-5"></i>
+                                </li>
+                            </ul>
+
+                            <!-- Action Button -->
+                            <div class="card-footer border-0 bg-transparent">
+                                <a href="#" class="btn btn-purple btn-lg w-100 py-3 rounded-pill fw-bold fs-5 shadow-lg text-white">
+                                    خبرة VIP
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="stats-section bg-white rounded-4 p-5 shadow-lg">
+                        <div class="row text-center">
+                            <div class="col-md-3 col-6 mb-4">
+                                <div class="stat-item">
+                                    <div class="stat-icon text-primary mb-2">
+                                        <i class="fas fa-users fa-3x"></i>
+                                    </div>
+                                    <h3 class="stat-number fw-bold text-dark display-5">2,500+</h3>
+                                    <p class="stat-label text-muted fw-medium">عميل راضٍ</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-4">
+                                <div class="stat-item">
+                                    <div class="stat-icon text-success mb-2">
+                                        <i class="fas fa-chart-line fa-3x"></i>
+                                    </div>
+                                    <h3 class="stat-number fw-bold text-dark display-5">95%</h3>
+                                    <p class="stat-label text-muted fw-medium">نسبة النجاح</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-4">
+                                <div class="stat-item">
+                                    <div class="stat-icon text-warning mb-2">
+                                        <i class="fas fa-trophy fa-3x"></i>
+                                    </div>
+                                    <h3 class="stat-number fw-bold text-dark display-5">3</h3>
+                                    <p class="stat-label text-muted fw-medium">سنوات خبرة</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-4">
+                                <div class="stat-item">
+                                    <div class="stat-icon text-purple mb-2">
+                                        <i class="fas fa-star fa-3x"></i>
+                                    </div>
+                                    <h3 class="stat-number fw-bold text-dark display-5">4.9</h3>
+                                    <p class="stat-label text-muted fw-medium">تقييم العملاء</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="row mt-5">
+                <div class="col-12 text-center">
+                    <div class="cta-section bg-dark text-white rounded-4 p-5 position-relative overflow-hidden">
+                        <!-- Background Pattern -->
+                        <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+                            <div class="pattern-dots"></div>
+                        </div>
+
+                        <h3 class="display-5 fw-bold mb-3 position-relative">🚀 مستعد لبدء رحلتك؟</h3>
+                        <p class="lead mb-4 position-relative">انضم إلى آلاف العملاء الذين غيروا حياتهم مع Salumida</p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3 position-relative">
+                            <a href="#contact" class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                احجز استشارة مجانية
+                            </a>
+                            <a href="https://wa.me/20123456789" class="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg">
+                                <i class="fab fa-whatsapp me-2"></i>
+                                تواصل على الواتساب
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @push('styles')
+    <style>
+        :root {
+            --primary: #06575B;
+            --success: #28a745;
+            --warning: #ff9800;
+            --purple: #9c27b0;
+            --dark: #2c3e50;
+        }
+
+        /* Hero Section Styles - تحسينات */
+        .hero-section {
+            position: relative;
+            width: 100%;
+             
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .container {
+            max-width: 1200px;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        .hero-slider-container {
+            height: 100%;
+            min-height: 280px;
+            width: 100% !important;
+            margin-top:20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hero-slider-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(6, 87, 91, 0.15);
+        }
+
+        .side-images-container {
+            height: 100%;
+            margin-top:20px;
+            min-height: 280px;
+        }
+
+        .side-image-item {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid transparent;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .side-image-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(6, 87, 91, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .side-image-item:hover::before {
+            opacity: 1;
+        }
+
+        .side-image-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(6, 87, 91, 0.4);
+            box-shadow: 0 15px 35px rgba(6, 87, 91, 0.25) !important;
+        }
+
+        /* تحسينات السلايدر */
+        .heroMainSwiper {
+            border-radius: 1.2rem;
+            overflow: hidden;
+            width: 100% !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .heroMainSwiper .swiper-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .heroMainSwiper .swiper-slide:hover img {
+            transform: scale(1.05);
+        }
+
+        /* تحسينات العناوين */
+        .section-title {
+            position: relative;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .section-title:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 87, 91, 0.2);
+        }
+
+        /* تحسينات الأقسام */
+        .section-padding {
+            padding: 4rem 0;
+        }
+
+        .categories-section {
+            background: linear-gradient(135deg, #ffffff, #fafafa);
+        }
+
+        .menu-products-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+
+        .services-section {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        }
+
+        /* Swiper Navigation - تحسينات */
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: white !important;
+            background: linear-gradient(135deg, rgba(6, 87, 91, 0.8), rgba(8, 126, 139, 0.8));
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .swiper-button-next:hover,
+        .swiper-button-prev:hover {
+            background: linear-gradient(135deg, rgba(6, 87, 91, 0.95), rgba(8, 126, 139, 0.95));
+            transform: scale(1.15) translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 87, 91, 0.4);
+        }
+
+        .swiper-button-next:after,
+        .swiper-button-prev:after {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .swiper-pagination-bullet {
+            background: white;
+            opacity: 0.6;
+            width: 12px;
+            height: 12px;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+        }
+
+        .swiper-pagination-bullet-active {
+            background: #06575B;
+            opacity: 1;
+            transform: scale(1.3);
+        }
+
+        /* Button Styles - تحسينات */
+        .btn-primary {
+            background: linear-gradient(135deg, #06575B, #087E8B);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(6, 87, 91, 0.2);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(6, 87, 91, 0.35);
+            background: linear-gradient(135deg, #054A4E, #06575B);
+            color: white;
+        }
+
+        .btn-outline-dark {
+            border: 2px solid #333;
+            color: #333;
+            background: transparent;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-outline-dark:hover {
+            background: #333;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 1s ease-out;
+        }
+
+        /* Enhanced Advertisement Section */
+        .special-offer-section {
+            position: relative;
+            overflow: hidden;
+            width: 100vw !important;
+            margin-left: calc(-50vw + 50%) !important;
+            margin-right: calc(-50vw + 50%) !important;
+        }
+
+        .special-offer-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(6, 87, 91, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-50px, -50px) rotate(360deg); }
+        }
+
+        .highlight-text {
+            background: linear-gradient(45deg, #06575B, #087E8B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .animate-bounce {
+            animation: bounce 2s infinite;
+        }
+
+        /* Services Section Hover Effects */
+        .service-card {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(6, 87, 91, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .service-card:hover::before {
+            left: 100%;
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(6, 87, 91, 0.2) !important;
+            border-color: #06575B !important;
+        }
+
+        .service-card:hover .service-icon {
+            transform: scale(1.1);
+            color: #06575B;
+        }
+
+        .service-card:hover .service-title {
+            color: #06575B;
+        }
+
+        /* Modern Package Cards - تحسينات الـ hover */
+        .package-card.modern-card {
+            transition: all 0.3s ease;
+            border: none;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .package-card.modern-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(6, 87, 91, 0.1) !important;
+            border-color: #06575B;
+        }
+
+        .card-header {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: -20px;
+            right: -20px;
+            height: 40px;
+            background: white;
+            transform: rotate(-2deg);
+            border-radius: 50%;
+        }
+
+        /* Ribbons */
+        .popular-ribbon,
+        .vip-ribbon {
+            font-size: 0.8rem;
+            min-width: 120px;
+            text-align: center;
+            background: linear-gradient(135deg, #06575B, #087E8B);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Icons */
+        .icon-wrapper {
+            transition: transform 0.3s ease;
+            color: #06575B;
+        }
+
+        .package-card:hover .icon-wrapper {
+            transform: scale(1.05);
+            color: #054A4E;
+        }
+
+        /* Features List */
+        .package-features li {
+            transition: all 0.3s ease;
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+        }
+
+        .package-features li:hover {
+            background: rgba(6, 87, 91, 0.05);
+            border-color: rgba(6, 87, 91, 0.2);
+        }
+
+        /* Buttons */
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800, #ffb74d);
+            border: none;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9c27b0, #ba68c8);
+            border: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa) !important;
+            border: 2px solid rgba(6, 87, 91, 0.1);
+        }
+
+        .stat-item {
+            transition: transform 0.3s ease;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            background: linear-gradient(135deg, #06575B, #054A4E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pattern-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(6, 87, 91, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        /* تحسينات البطاقات */
+        .product-card, .menu-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card:hover, .menu-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(6, 87, 91, 0.15) !important;
+            border-color: rgba(6, 87, 91, 0.3);
+        }
+
+        .product-card:hover .product-img, .menu-card:hover .menu-img {
+            transform: scale(1.05);
+        }
+
+        .product-card:hover .position-absolute.overlay, .menu-card:hover .position-absolute.overlay {
+            opacity: 1;
+        }
+
+        .product-img, .menu-img {
+            height: 200px;
+            object-fit: cover;
+            width: 100%;
+            transition: transform 0.5s ease;
+        }
+
+        .product-info, .menu-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to bottom, white, #fafafa);
+        }
+
+        .product-title, .menu-title {
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s ease;
+        }
+
+        .product-title:hover, .menu-title:hover {
+            color: #06575B !important;
+        }
+
+        .product-rating {
+            color: #ffc107;
+        }
+
+        .product-price, .menu-price {
+            font-weight: 700;
+        }
+
+        .add-to-cart-btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-to-cart-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(6, 87, 91, 0.3);
+        }
+
+        /* تحسينات الخصومات */
+        .badge.bg-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333) !important;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Primary Color Classes */
+        .text-primary {
+            color: #06575B !important;
+        }
+
+        .bg-primary {
+            background-color: #06575B !important;
+        }
+
+        .border-primary {
+            border-color: #06575B !important;
+        }
+
+        /* زر عرض الكل في أقصى اليمين فوق آخر منتج */
+        .right-aligned-btn {
+            margin-right: 0 !important;
+            margin-left: auto !important;
+            transform: translateX(-150px) !important;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* تحسين الأزرار في الأقسام المختلفة */
+        .category-section .text-md-end,
+        .menu-advertisement-section .text-md-end,
+        .menu-products-section .text-md-end {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+        }
+
+        /* Responsive Design - تحسينات */
+        @media (max-width: 768px) {
+            .hero-section {
+                min-height: 35vh;
+                padding: 15px 0;
+            }
+
+            .hero-slider-container {
+                min-height: 200px;
+                margin-bottom: 20px;
+            }
+
+            .side-images-container {
+                min-height: auto;
+            }
+
+            .side-image-item {
+                min-height: 100px;
+                margin-bottom: 15px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+                max-width: 280px;
+                margin: 5px 0;
+            }
+
+            .package-card {
+                margin-bottom: 2rem;
+            }
+
+            .display-3 {
+                font-size: 2rem;
+            }
+
+            .display-4 {
+                font-size: 2.5rem;
+            }
+
+            .display-5 {
+                font-size: 1.5rem;
+            }
+
+            .cta-section .btn {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .popular-ribbon,
+            .vip-ribbon {
+                transform: none !important;
+                position: relative !important;
+                margin-bottom: 1rem;
+            }
+
+            /* تحسين الأزرار على الموبايل */
+            .right-aligned-btn {
+                transform: translateX(0) !important;
+                margin: 10px auto !important;
+                float: none !important;
+            }
+
+            .category-section .text-md-end,
+            .menu-advertisement-section .text-md-end,
+            .menu-products-section .text-md-end {
+                justify-content: center;
+            }
+
+            /* تعديلات الـ container على الموبايل */
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            /* تحسينات الأقسام على الموبايل */
+            .section-padding {
+                padding: 3rem 0;
+            }
+
+            .menu-advertisement-section {
+                padding: 3rem 0;
+            }
+
+            /* تحسينات العناوين على الموبايل */
+            .section-title {
+                font-size: 1.6rem !important;
+                padding: 0.5rem 1rem !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero-slider-container {
+                min-height: 200px;
+            }
+
+            .side-image-item {
+                min-height: 100px;
+            }
+
+            .hero-title {
+                font-size: 2rem !important;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem !important;
+            }
+
+            .package-card {
+                margin: 0 auto 2rem;
+                max-width: 320px;
+            }
+
+            .card-body {
+                padding: 1.5rem !important;
+            }
+
+            /* تحسينات العناوين على الموبايل */
+            .section-title {
+                font-size: 1.4rem !important;
+            }
+
+            .category-title {
+                font-size: 1.5rem !important;
+            }
+        }
+
+        /* تحسينات إضافية للشاشات الكبيرة */
+        @media (min-width: 1400px) {
+            .container {
+                max-width: 1320px;
+            }
+
+            .hero-slider-container {
+                min-height: 350px;
+            }
+
+            .side-image-item {
+                min-height: 170px;
+            }
+        }
+
+        /* Shadow Effects */
+        .shadow-2xl {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        /* Hover Effects */
+        .btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+        }
+    </style>
+    @endpush
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Main Hero Swiper
+            new Swiper('.heroMainSwiper', {
+                slidesPerView: 1,
+                spaceBetween: 0,
+                loop: true,
+                autoplay: {
+                    delay: 5000,
+                    disableOnInteraction: false,
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                    dynamicBullets: true,
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                effect: 'fade',
+                fadeEffect: {
+                    crossFade: true
+                },
+                speed: 1000
+            });
+
+            // Initialize Category Swipers
+            @foreach($categoriesWithProducts as $category)
+            @if($category->products->count() > 0)
+            new Swiper('.categorySwiper-{{ $category->id }}', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                navigation: {
+                    nextEl: '.category-next-{{ $category->id }}',
+                    prevEl: '.category-prev-{{ $category->id }}',
+                },
+                breakpoints: {
+                    640: { slidesPerView: 2 },
+                    768: { slidesPerView: 3 },
+                    1024: { slidesPerView: 4 },
+                    1200: { slidesPerView: 5 }
+                }
+            });
+            @endif
+            @endforeach
+
+            // Package card animations
+            const packageCards = document.querySelectorAll('.package-card.modern-card');
+
+            packageCards.forEach((card, index) => {
+                // Staggered animation
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Service cards hover effects
+            const serviceCards = document.querySelectorAll('.service-card');
+            serviceCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.zIndex = '1000';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.zIndex = '1';
+                });
+            });
+
+            // Button hover effects
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Smooth scroll
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Animate stats counting
+            const animateStats = () => {
+                const stats = document.querySelectorAll('.stat-number');
+                stats.forEach(stat => {
+                    const target = parseInt(stat.textContent);
+                    let current = 0;
+                    const increment = target / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            stat.textContent = target + (stat.textContent.includes('%') ? '%' : '+');
+                            clearInterval(timer);
+                        } else {
+                            stat.textContent = Math.floor(current) + (stat.textContent.includes('%') ? '%' : '+');
+                        }
+                    }, 30);
+                });
+            };
+
+            // Trigger stats animation when section is in view
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateStats();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+
+            const statsSection = document.querySelector('.stats-section');
+            if (statsSection) {
+                observer.observe(statsSection);
+            }
+        });
+    </script>
+    @endpush
+
+@endsection
