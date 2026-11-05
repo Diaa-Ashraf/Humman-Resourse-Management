@@ -25,31 +25,13 @@ class PerformanceReviewController extends Controller
             'period_end'=>'required|date|after_or_equal:period_start', 'rating'=>'nullable|numeric|min:1|max:5',
             'strengths'=>'nullable|string|max:3000', 'improvement_areas'=>'nullable|string|max:3000', 'goals'=>'nullable|string|max:3000',
             'action'=>'required|in:draft,submitted',
-            'employee_comments'=>'nullable|string|max:3000','goals_list'=>'nullable|array|max:20','goals_list.*.title'=>'required|string|max:180','goals_list.*.measure_unit'=>'nullable|string|max:40','goals_list.*.target_value'=>'nullable|numeric','goals_list.*.weight'=>'nullable|integer|between:1,100',
+            'employee_comments'=>'nullable|string|max:3000','goals_list'=>'nullable|array|max:20',
+            'goals_list.*.title'=>'required|string|max:180','goals_list.*.measure_unit'=>'nullable|string|max:40',
+            'goals_list.*.target_value'=>'nullable|numeric','goals_list.*.weight'=>'nullable|numeric|min:0',
         ]);
         app(BranchAccess::class)->assertEmployee(Employee::findOrFail($data['employee_id']),auth()->user());
-        $goals=$data['goals_list']??[];unset($data['goals_list']);
-        
-        // إذا قام المستخدم بتحديد أوزان، نتحقق أن مجموعها 100%، أو إذا كانت أوزان فارغة نوزعها تلقائياً بالتساوي
-        if (!empty($goals)) {
-            $hasExplicitWeights = collect($goals)->contains(fn($g) => !empty($g['weight']));
-            if ($hasExplicitWeights) {
-                $totalWeight = array_sum(array_column($goals, 'weight'));
-                if ($totalWeight !== 100) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'goals_list' => 'مجموع أوزان الأهداف المستخدمة حالياً هو ' . $totalWeight . '%. يجب أن يكون المجموع 100% (أو قم بملء الأهداف الثلاثة بأوزانها الافتراضية 40% + 30% + 30%).'
-                    ]);
-                }
-            } else {
-                // توزيع تلقائي متساوي في حال عدم كتابة الأوزان
-                $equalWeight = intdiv(100, count($goals));
-                $remainder = 100 % count($goals);
-                foreach ($goals as $idx => &$g) {
-                    $g['weight'] = $equalWeight + ($idx === 0 ? $remainder : 0);
-                }
-                unset($g);
-            }
-        }
+        $goals = $this->normalizeGoalWeights($data['goals_list'] ?? []);
+        unset($data['goals_list']);
 
         if($data['action']==='submitted'&&!$goals&&!filled($data['goals']??null))throw \Illuminate\Validation\ValidationException::withMessages(['goals_list'=>'أضف هدفًا واحدًا قابلًا للقياس أو هدفاً عاماً على الأقل قبل الإرسال.']);
         if(PerformanceReview::where('employee_id',$data['employee_id'])->whereIn('status',['draft','submitted','approved'])->whereDate('period_start','<=',$data['period_end'])->whereDate('period_end','>=',$data['period_start'])->exists())throw \Illuminate\Validation\ValidationException::withMessages(['period_start'=>'توجد مراجعة أخرى تتداخل مع هذه الفترة.']);
@@ -66,13 +48,79 @@ class PerformanceReviewController extends Controller
     {
         app(BranchAccess::class)->assertEmployee($review->employee,auth()->user());
         abort_unless(auth()->user()->can('store_performance'),403);abort_unless(in_array($review->status,['draft','returned'],true),409);
-        $request->merge(['goals_list'=>array_values(array_filter($request->input('goals_list',[]),fn($goal)=>filled($goal['title']??null)))]);
-        $data=$request->validate(['period_start'=>'required|date','period_end'=>'required|date|after_or_equal:period_start','rating'=>'nullable|numeric|between:1,5','strengths'=>'nullable|string|max:3000','improvement_areas'=>'nullable|string|max:3000','goals'=>'nullable|string|max:3000','employee_comments'=>'nullable|string|max:3000','action'=>'required|in:draft,submitted','goals_list'=>'nullable|array|max:20','goals_list.*.title'=>'required|string|max:180','goals_list.*.measure_unit'=>'required_with:goals_list.*.title|string|max:40','goals_list.*.target_value'=>'required_with:goals_list.*.title|numeric','goals_list.*.weight'=>'required|integer|between:1,100']);
-        $goals=$data['goals_list']??[];unset($data['goals_list']);if($goals && array_sum(array_column($goals,'weight'))!==100)throw \Illuminate\Validation\ValidationException::withMessages(['goals_list'=>'يجب أن يكون مجموع أوزان الأهداف 100%.']);if($data['action']==='submitted'&&!$goals&&!filled($data['goals']??null))throw \Illuminate\Validation\ValidationException::withMessages(['goals_list'=>'أضف هدفًا واحدًا قابلًا للقياس على الأقل قبل الإرسال.']);
+        $request->merge(['goals_list'=>array_values(array_filter($request->input('goals_list',[]),fn($goal)=>filled(trim($goal['title']??''))))]);
+        $data=$request->validate([
+            'period_start'=>'required|date','period_end'=>'required|date|after_or_equal:period_start',
+            'rating'=>'nullable|numeric|between:1,5','strengths'=>'nullable|string|max:3000',
+            'improvement_areas'=>'nullable|string|max:3000','goals'=>'nullable|string|max:3000',
+            'employee_comments'=>'nullable|string|max:3000','action'=>'required|in:draft,submitted',
+            'goals_list'=>'nullable|array|max:20','goals_list.*.title'=>'required|string|max:180',
+            'goals_list.*.measure_unit'=>'nullable|string|max:40',
+            'goals_list.*.target_value'=>'nullable|numeric',
+            'goals_list.*.weight'=>'nullable|numeric|min:0'
+        ]);
+        $goals=$this->normalizeGoalWeights($data['goals_list']??[]);
+        unset($data['goals_list']);
+        if($data['action']==='submitted'&&!$goals&&!filled($data['goals']??null))throw \Illuminate\Validation\ValidationException::withMessages(['goals_list'=>'أضف هدفًا واحدًا قابلًا للقياس على الأقل قبل الإرسال.']);
         if(PerformanceReview::where('employee_id',$review->employee_id)->whereKeyNot($review->id)->whereIn('status',['draft','submitted','approved'])->whereDate('period_start','<=',$data['period_end'])->whereDate('period_end','>=',$data['period_start'])->exists())throw \Illuminate\Validation\ValidationException::withMessages(['period_start'=>'توجد مراجعة أخرى تتداخل مع هذه الفترة.']);
         $action=$data['action'];unset($data['action']);$data['status']=$action;$data['submitted_at']=$action==='submitted'?now():null;$review->update($data);
         $review->performanceGoals()->delete();foreach($goals as $goal)$review->performanceGoals()->create($goal);
         return back()->with('success','تم تحديث المراجعة وأهدافها.');
+    }
+
+    /**
+     * موازنة أوزان الأهداف تلقائياً لتساوي 100% دون إجبار المستخدم على حسابات معقدة
+     */
+    protected function normalizeGoalWeights(array $goals): array
+    {
+        if (empty($goals)) {
+            return [];
+        }
+
+        $count = count($goals);
+        $weights = array_map(fn($g) => isset($g['weight']) && is_numeric($g['weight']) ? max(0, (float)$g['weight']) : 0, $goals);
+        $totalEntered = array_sum($weights);
+
+        if ($totalEntered > 0) {
+            if (abs($totalEntered - 100) < 0.001) {
+                foreach ($goals as $i => &$g) {
+                    $g['weight'] = (int) round($weights[$i]);
+                }
+                unset($g);
+                return $goals;
+            }
+
+            $calculated = [];
+            $runningSum = 0;
+            foreach ($weights as $i => $w) {
+                if ($i === $count - 1) {
+                    $assigned = max(1, 100 - $runningSum);
+                } else {
+                    $assigned = max(1, (int) round(($w / $totalEntered) * 100));
+                    $runningSum += $assigned;
+                }
+                $calculated[$i] = $assigned;
+            }
+
+            $diff = 100 - array_sum($calculated);
+            if ($diff !== 0 && $count > 0) {
+                $calculated[$count - 1] = max(1, $calculated[$count - 1] + $diff);
+            }
+
+            foreach ($goals as $i => &$g) {
+                $g['weight'] = $calculated[$i];
+            }
+            unset($g);
+        } else {
+            $equal = intdiv(100, $count);
+            $rem = 100 % $count;
+            foreach ($goals as $i => &$g) {
+                $g['weight'] = $equal + ($i === 0 ? $rem : 0);
+            }
+            unset($g);
+        }
+
+        return $goals;
     }
 
     public function decide(Request $request, PerformanceReview $review)
