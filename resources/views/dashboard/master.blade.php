@@ -2,7 +2,6 @@
 <html lang="ar" dir="rtl">
 
 @include('dashboard.partials.head')
-@flasher_render
 
 <body>
   @include('dashboard.partials.navbar')
