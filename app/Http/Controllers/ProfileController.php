@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Spatie\Permission\Models\Role;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -42,11 +43,15 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->can('manage_users') && $request->user()->can('delete_users'), 403, 'حذف الحساب يتطلب صلاحية مسؤول النظام.');
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
+        if ($user->hasRole('Super Admin') && Role::findByName('Super Admin')->users()->count() <= 1) {
+            return back()->withErrors(['password' => 'لا يمكن حذف آخر مسؤول للنظام.']);
+        }
 
         Auth::logout();
 
@@ -55,6 +60,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::route('login');
     }
 }

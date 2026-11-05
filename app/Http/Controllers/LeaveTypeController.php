@@ -16,12 +16,13 @@ class LeaveTypeController extends Controller
 
     public function index()
     {
-        $types = LeaveType::all();
+        $types = LeaveType::withCount('leaves')->orderBy('name')->paginate(20);
         return view('dashboard.LeaveTypes.index', compact('types'));
     }
 
     public function create()
     {
+        abort_unless(auth()->user()->can('store_leave_types'), 403);
         return view('dashboard.LeaveTypes.create');
     }
 
@@ -33,6 +34,7 @@ class LeaveTypeController extends Controller
             'description' => 'nullable|string|max:500',
             'status' => 'required|in:active,inactive',
             'max_days' => 'nullable|integer|min:1',
+            'annual_entitlement_days'=>'nullable|numeric|min:0|max:365','carryover_cap_days'=>'nullable|numeric|min:0|max:365','max_consecutive_days'=>'nullable|integer|min:1|max:365','exclude_weekends'=>'required|boolean','requires_coverage'=>'required|boolean',
         ]);
 
         LeaveType::create($validated);
@@ -48,6 +50,7 @@ class LeaveTypeController extends Controller
 
     public function edit(LeaveType $leaveType)
     {
+        abort_unless(auth()->user()->can('update_leave_types'), 403);
         return view('dashboard.LeaveTypes.edit', compact('leaveType'));
     }
 
@@ -58,6 +61,7 @@ class LeaveTypeController extends Controller
             'description' => 'nullable|string|max:500',
             'status' => 'required|in:active,inactive',
             'max_days' => 'nullable|integer|min:1',
+            'annual_entitlement_days'=>'nullable|numeric|min:0|max:365','carryover_cap_days'=>'nullable|numeric|min:0|max:365','max_consecutive_days'=>'nullable|integer|min:1|max:365','exclude_weekends'=>'required|boolean','requires_coverage'=>'required|boolean',
         ]);
 
         $leaveType->update($validated);
@@ -68,8 +72,9 @@ class LeaveTypeController extends Controller
 
     public function destroy(LeaveType $leaveType)
     {
-        if ($leaveType->status === 'active') {
-            return back()->withErrors(['msg' => 'لا يمكن حذف نوع إجازة نشط']);
+        abort_unless(auth()->user()->can('delete_leave_types'), 403);
+        if ($leaveType->status === 'active' || $leaveType->leaves()->exists()) {
+            return back()->withErrors(['msg' => 'لا يمكن حذف نوع إجازة نشط أو مرتبط بطلبات إجازة.']);
         }
 
         $leaveType->delete();

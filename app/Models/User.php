@@ -27,6 +27,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'mfa_secret' => 'encrypted',
+            'mfa_enabled_at' => 'datetime',
+            'password_changed_at' => 'datetime',
         ];
     }
+
+    public function employee() { return $this->hasOne(Employee::class); }
+    public function branchScopes() { return $this->belongsToMany(Branch::class,'user_branch_scopes')->withPivot('assigned_by')->withTimestamps(); }
+    public function securitySessions() { return $this->hasMany(UserSession::class); }
 }

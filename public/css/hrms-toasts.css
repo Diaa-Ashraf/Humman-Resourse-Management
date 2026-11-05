@@ -1,0 +1,151 @@
+/* Toast Notifications Positioning and Design */
+#toast-container,
+.toast-container {
+    position: fixed !important;
+    top: 90px !important;
+    left: 24px !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 999999 !important;
+    pointer-events: none;
+}
+
+#toast-container > .toast,
+.toast-container > div {
+    position: relative !important;
+    pointer-events: auto !important;
+    width: min(420px, calc(100vw - 40px)) !important;
+    min-height: 64px !important;
+    margin: 0 0 14px !important;
+    padding: 16px 54px 16px 42px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-right: 5px solid #147d64 !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    color: #1e293b !important;
+    font-family: 'Tajawal', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+    opacity: 1 !important;
+}
+
+#toast-container > .toast:before,
+.toast-container > div:before {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    display: grid !important;
+    width: 26px !important;
+    height: 26px !important;
+    place-items: center !important;
+    border-radius: 50% !important;
+    background: #e8f5ef !important;
+    color: #147d64 !important;
+    content: '✓' !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+}
+
+#toast-container > .toast.toast-error,
+.toast-container > div.toast-error {
+    border-right-color: #ef4444 !important;
+}
+#toast-container > .toast.toast-error:before,
+.toast-container > div.toast-error:before {
+    content: '!' !important;
+    background: #fee2e2 !important;
+    color: #ef4444 !important;
+}
+
+#toast-container > .toast.toast-warning,
+.toast-container > div.toast-warning {
+    border-right-color: #f59e0b !important;
+}
+#toast-container > .toast.toast-warning:before,
+.toast-container > div.toast-warning:before {
+    content: '!' !important;
+    background: #fef3c7 !important;
+    color: #d97706 !important;
+}
+
+#toast-container > .toast.toast-info,
+.toast-container > div.toast-info {
+    border-right-color: #3b82f6 !important;
+}
+#toast-container > .toast.toast-info:before,
+.toast-container > div.toast-info:before {
+    content: 'i' !important;
+    background: #dbeafe !important;
+    color: #2563eb !important;
+}
+
+#toast-container .toast-title,
+.toast-container .toast-title {
+    margin: 0 0 4px !important;
+    color: #0f172a !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    text-align: right !important;
+}
+
+#toast-container .toast-message,
+.toast-container .toast-message {
+    color: #475569 !important;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    white-space: pre-line !important;
+    overflow-wrap: anywhere !important;
+    text-align: right !important;
+}
+
+#toast-container .toast-close-button,
+.toast-container .toast-close-button {
+    position: absolute !important;
+    top: 10px !important;
+    right: auto !important;
+    left: 12px !important;
+    color: #94a3b8 !important;
+    text-shadow: none !important;
+    opacity: 0.8 !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+}
+
+#toast-container .toast-progress,
+.toast-container .toast-progress {
+    right: 0 !important;
+    left: auto !important;
+    height: 3px !important;
+    border-radius: 0 0 14px 14px !important;
+    background-color: #147d64 !important;
+    opacity: 0.6 !important;
+}
+
+#toast-container .toast-error .toast-progress,
+.toast-container .toast-error .toast-progress {
+    background-color: #ef4444 !important;
+}
+#toast-container .toast-warning .toast-progress,
+.toast-container .toast-warning .toast-progress {
+    background-color: #f59e0b !important;
+}
+#toast-container .toast-info .toast-progress,
+.toast-container .toast-info .toast-progress {
+    background-color: #3b82f6 !important;
+}
+
+@media (max-width: 575.98px) {
+    #toast-container,
+    .toast-container {
+        top: 75px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+    }
+    #toast-container > .toast,
+    .toast-container > div {
+        width: 100% !important;
+    }
+}

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('customers') || Schema::hasColumn('customers', 'notes')) return;
         Schema::table('customers', function (Blueprint $table) {
             $table->text('notes')->nullable()->after('status');
         });
@@ -21,6 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('customers') || !Schema::hasColumn('customers', 'notes')) return;
         Schema::table('customers', function (Blueprint $table) {
             $table->dropColumn('notes');
         });

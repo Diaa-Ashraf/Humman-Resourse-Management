@@ -27,13 +27,8 @@
             <input type="date" name="payment_date" class="form-control" required>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">الحالة</label>
-            <select name="status" class="form-select">
-                <option value="pending">قيد الانتظار</option>
-                <option value="paid">مدفوع</option>
-            </select>
-        </div>
+        <input type="hidden" name="status" value="pending">
+        <p class="text-muted">سيُسجل المسير قيد الانتظار، ويعتمد الصرف من مستخدم مخوّل.</p>
 
         <button type="submit" class="btn btn-success">حفظ</button>
         <a href="{{ route('salaries.index') }}" class="btn btn-secondary">رجوع</a>

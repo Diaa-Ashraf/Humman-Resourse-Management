@@ -1,5 +1,6 @@
  <!-- BEGIN VENDOR JS-->
   <script src="{{ asset('assets/assets-back')}}/vendors/js/vendors.min.js" type="text/javascript"></script>
+  <script src="{{ asset('assets/assets-back')}}/vendors/js/extensions/toastr.min.js" type="text/javascript"></script>
   <!-- BEGIN VENDOR JS-->
   <!-- BEGIN PAGE VENDOR JS-->
   <script src="{{ asset('assets/assets-back')}}/vendors/js/forms/validation/jqBootstrapValidation.js"
@@ -13,6 +14,5 @@
   <!-- BEGIN PAGE LEVEL JS-->
   <script src="{{ asset('assets/assets-back')}}/js/scripts/forms/form-login-register.js" type="text/javascript"></script>
   <!-- END PAGE LEVEL JS-->
-   <!-- Toastr JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  @include('dashboard.partials.toaster_notification')
 </body>

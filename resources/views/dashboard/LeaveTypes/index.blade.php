@@ -5,7 +5,7 @@
 
     <div class="d-flex justify-content-between mb-4">
         <h3 class="fw-bold">إدارة أنواع الإجازات</h3>
-        <a href="{{ route('leave-types.create') }}" class="btn btn-primary">إضافة نوع جديد</a>
+        @can('store_leave_types')<a href="{{ route('leave-types.create') }}" class="btn btn-primary">إضافة نوع جديد</a>@endcan
     </div>
 
     @if (session('success'))
@@ -32,7 +32,7 @@
                 <tbody>
                     @forelse ($types as $type)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $types->firstItem() + $loop->index }}</td>
                             <td>{{ $type->name }}</td>
                             <td>{{ $type->description ?? '-' }}</td>
                             <td>{{ $type->max_days ?? '-' }}</td>
@@ -42,17 +42,19 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('leave-types.show', $type->id) }}" class="btn btn-info btn-sm">عرض</a>
-                                <a href="{{ route('leave-types.edit', $type->id) }}" class="btn btn-warning btn-sm">تعديل</a>
+                                @can('show_leave_types')<a href="{{ route('leave-types.show', $type->id) }}" class="btn btn-info btn-sm">عرض</a>@endcan
+                                @can('update_leave_types')<a href="{{ route('leave-types.edit', $type->id) }}" class="btn btn-warning btn-sm">تعديل</a>@endcan
 
-                                <form action="{{ route('leave-types.destroy', $type->id) }}" method="POST" class="d-inline">
+                                @can('delete_leave_types')
+                                @if($type->leaves_count === 0 && $type->status !== 'active')<form action="{{ route('leave-types.destroy', $type->id) }}" method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')
 
                                     <button class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد؟')">
                                         حذف
                                     </button>
-                                </form>
+                                </form>@endif
+                                @endcan
                             </td>
                         </tr>
                     @empty
@@ -62,6 +64,7 @@
                     @endforelse
                 </tbody>
             </table>
+            {{ $types->links() }}
         </div>
     </div>
 

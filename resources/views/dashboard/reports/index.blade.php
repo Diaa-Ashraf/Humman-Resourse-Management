@@ -25,11 +25,20 @@
                     <input type="date" name="to" class="form-control" value="{{ $to->toDateString() }}">
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label">الفرع</label>
+                    <select name="branch_id" class="form-select">
+                        <option value="">كل الفروع</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label">القسم</label>
                     <select name="section_id" class="form-select">
                         <option value="">الكل</option>
                         @foreach($sections as $section)
-                            <option value="{{ $section->id }}">{{ $section->name }}</option>
+                            <option value="{{ $section->id }}" @selected(request('section_id') == $section->id)>{{ $section->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -38,7 +47,7 @@
                     <select name="employee_id" class="form-select">
                         <option value="">الكل</option>
                         @foreach($employees as $emp)
-                            <option value="{{ $emp->id }}" @if($employee && $employee->id == $emp->id) selected @endif>
+                        <option value="{{ $emp->id }}" @selected(request('employee_id') == $emp->id)>
                                 {{ $emp->name }} ({{ $emp->section->name ?? 'بدون قسم' }})
                             </option>
                         @endforeach
@@ -71,16 +80,16 @@
         </div>
         <div class="col-md-2">
             <div class="card p-3 text-center bg-success text-white">
-                <h6>إجمالي البونص</h6>
+                <h6>المكافآت المعتمدة</h6>
                 <p class="fs-5 fw-bold">{{ number_format($totalBonuses, 2) }} جنيه</p>
-                <small>عدد البونص: {{ $bonusCount }}</small>
+                <small>عددها: {{ $bonusCount }}</small>
             </div>
         </div>
         <div class="col-md-2">
             <div class="card p-3 text-center bg-danger text-white">
-                <h6>إجمالي الخصومات</h6>
+                <h6>الخصومات المعتمدة</h6>
                 <p class="fs-5 fw-bold">{{ number_format($totalDeductions, 2) }} جنيه</p>
-                <small>عدد الخصومات: {{ $deductionCount }}</small>
+                <small>عددها: {{ $deductionCount }}</small>
             </div>
         </div>
         <div class="col-md-2">
@@ -104,6 +113,16 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="card p-3 h-100"><small class="text-muted">عدد العاملين بنهاية الفترة</small><strong class="fs-4">{{ $headcountAtEnd }}</strong><small>ضمن الفروع والفلاتر المسموحة</small></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3 h-100"><small class="text-muted">دوران الموظفين</small><strong class="fs-4">{{ number_format($turnoverRate,1) }}%</strong><small>{{ $terminations }} مغادرة في الفترة</small></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3 h-100"><small class="text-muted">الشواغر المعتمدة</small><strong class="fs-4">{{ $openVacancies }}</strong><small>مقعد شاغر في الفروع المحددة</small></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3 h-100"><small class="text-muted">التدريب</small><strong class="fs-4">{{ number_format($trainingHours,1) }} ساعة</strong><small>{{ $trainingCourseCount }} برنامج · {{ number_format($trainingCost,2) }} جنيه</small></div></div>
+        <div class="col-6 col-lg-3"><div class="card p-3 h-100"><small class="text-muted">تنبيهات التشغيل</small><strong class="fs-4">{{ $documentAlerts + $overdueRequests }}</strong><small>{{ $documentAlerts }} مستندات قاربت/انتهت · {{ $overdueRequests }} طلبات متأخرة</small></div></div>
+    </div>
+
+    @if($branchComparison->isNotEmpty())<div class="card mb-4"><div class="card-header"><strong>مقارنة الفروع للفترة المحددة</strong></div><div class="card-body table-responsive"><table class="table"><thead><tr><th>الفرع</th><th>الموظفون النشطون</th><th>تكلفة الرواتب</th><th>سجلات الحضور</th><th>الغياب</th><th>التأخير</th></tr></thead><tbody>@foreach($branchComparison as $branch)<tr><td>{{ $branch['name'] }}</td><td>{{ $branch['employees'] }}</td><td>{{ number_format($branch['payroll'],2) }} جنيه</td><td>{{ $branch['attendance'] }}</td><td>{{ $branch['absence'] }}</td><td>{{ $branch['late'] }}</td></tr>@endforeach</tbody></table></div></div>@endif
 
     <!-- ====== Charts Section ====== -->
     <div class="row mb-4">
@@ -171,8 +190,8 @@
                             <tr>
                                 <td>{{ $salary->id }}</td>
                                 <td>{{ $salary->employee->name }}</td>
-                                <td>{{ $salary->employee->section->name ?? 'N/A' }}</td>
-                                <td class="fw-bold">{{ number_format($salary->amount, 2) }} جنيه</td>
+                                <td>{{ $salary->employee->section->name ?? 'غير محدد' }}</td>
+                                <td class="fw-bold">{{ number_format($salary->total, 2) }} جنيه</td>
                                 <td>{{ \Carbon\Carbon::parse($salary->payment_date)->format('Y-m-d') }}</td>
                                 <td>{{ $salary->notes ?? '-' }}</td>
                             </tr>
@@ -208,7 +227,7 @@
                             <tr>
                                 <td>{{ $bonus->id }}</td>
                                 <td>{{ $bonus->employee->name }}</td>
-                                <td>{{ $bonus->employee->section->name ?? 'N/A' }}</td>
+                                <td>{{ $bonus->employee->section->name ?? 'غير محدد' }}</td>
                                 <td class="fw-bold text-success">{{ number_format($bonus->amount, 2) }} جنيه</td>
                                 <td>{{ $bonus->reason }}</td>
                                 <td>{{ \Carbon\Carbon::parse($bonus->bonus_date)->format('Y-m-d') }}</td>
@@ -246,7 +265,7 @@
                             <tr>
                                 <td>{{ $deduction->id }}</td>
                                 <td>{{ $deduction->employee->name }}</td>
-                                <td>{{ $deduction->employee->section->name ?? 'N/A' }}</td>
+                                <td>{{ $deduction->employee->section->name ?? 'غير محدد' }}</td>
                                 <td class="fw-bold text-danger">{{ number_format($deduction->amount, 2) }} جنيه</td>
                                 <td>{{ $deduction->reason }}</td>
                                 <td>{{ \Carbon\Carbon::parse($deduction->deduction_date)->format('Y-m-d') }}</td>
@@ -306,7 +325,7 @@
                         @foreach($attendances as $attendance)
                             <tr>
                                 <td>{{ $attendance->employee->name }}</td>
-                                <td>{{ $attendance->employee->section->name ?? 'N/A' }}</td>
+                                <td>{{ $attendance->employee->section->name ?? 'غير محدد' }}</td>
                                 <td>{{ \Carbon\Carbon::parse($attendance->attendance_date)->format('Y-m-d') }}</td>
                                 <td>{{ $attendance->check_in ?? '-' }}</td>
                                 <td>{{ $attendance->check_out ?? '-' }}</td>
@@ -349,10 +368,7 @@
                             <th>الموظف</th>
                             <th>القسم</th>
                             <th>أيام الحضور</th>
-                            <th>الراتب الأساسي</th>
-                            <th>المكافآت</th>
-                            <th>الخصومات</th>
-                            <th>إجمالي المستحق</th>
+                            <th>إجمالي مسيرات الراتب</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -361,9 +377,6 @@
                                 <td>{{ $perf['name'] }}</td>
                                 <td>{{ $perf['section'] }}</td>
                                 <td>{{ $perf['attendance_days'] }}</td>
-                                <td>{{ number_format($perf['base_salary'], 2) }}</td>
-                                <td class="text-success">{{ number_format($perf['bonuses'], 2) }}</td>
-                                <td class="text-danger">{{ number_format($perf['deductions'], 2) }}</td>
                                 <td class="fw-bold">{{ number_format($perf['total_earnings'], 2) }}</td>
                             </tr>
                         @endforeach
@@ -385,9 +398,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>القسم</th>
-                            <th>عدد الموظفين</th>
-                            <th>إجمالي الرواتب</th>
-                            <th>متوسط الراتب</th>
+                            <th>عدد الموظفين ذوي مسير</th>
+                            <th>إجمالي مسيرات الرواتب</th>
+                            <th>متوسط المسير</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -432,7 +445,7 @@
                         @foreach($leaves as $leave)
                             <tr>
                                 <td>{{ $leave->employee->name }}</td>
-                                <td>{{ $leave->leaveType->name ?? 'N/A' }}</td>
+                                <td>{{ $leave->leaveType->name ?? 'غير محدد' }}</td>
                                 <td>{{ \Carbon\Carbon::parse($leave->start_date)->format('Y-m-d') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($leave->end_date)->format('Y-m-d') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($leave->start_date)->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1 }}</td>

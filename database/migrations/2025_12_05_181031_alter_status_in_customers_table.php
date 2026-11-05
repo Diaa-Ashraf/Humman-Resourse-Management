@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,9 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->enum('status', ['Active', 'Inactive', 'Waiting Confirmation'])->default('Active')->change();
-        });
+        // The base customers migration already defines this status column.
+        // This historical migration is intentionally a no-op: changing an
+        // already-created enum rebuilds the table unnecessarily on SQLite.
     }
 
     /**
@@ -21,8 +20,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            //
-        });
+        // No schema change was applied in up().
     }
 };

@@ -1,0 +1,5 @@
+@extends('dashboard.master')
+@section('title', 'الإشعارات')
+@section('content')
+<div class="hr-page-heading"><div><h1>الإشعارات</h1><p>الموافقات والتنبيهات الخاصة بنطاق صلاحياتك.</p></div><form method="post" action="{{ route('notifications.read-all') }}">@csrf @method('patch')<button class="btn btn-outline-secondary">تعليم الكل كمقروء</button></form></div><div class="card"><div class="card-body">@forelse($notifications as $notice)<form class="d-flex justify-content-between align-items-center gap-3 border-bottom py-3" method="post" action="{{ route('notifications.read',$notice->id) }}">@csrf<button class="btn btn-link text-end text-decoration-none p-0"><strong>{{ $notice->data['title'] ?? 'تنبيه' }}</strong><span class="d-block text-muted">{{ $notice->data['message'] ?? '' }}</span></button><small class="text-muted text-nowrap">{{ $notice->created_at->format('Y-m-d H:i') }} @if(!$notice->read_at)<span class="badge bg-success">جديد</span>@endif</small></form>@empty<p class="text-muted mb-0">لا توجد إشعارات حتى الآن.</p>@endforelse{{ $notifications->links() }}</div></div>
+@endsection

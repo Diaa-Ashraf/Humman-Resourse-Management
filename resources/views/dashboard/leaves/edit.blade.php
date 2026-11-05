@@ -46,17 +46,26 @@
         </div>
 
         <div class="mb-3">
+            <label class="form-label">الموظف البديل (إذا كان مطلوبًا)</label>
+            <select name="coverage_employee_id" class="form-select">
+                <option value="">بدون بديل</option>
+                @foreach($employees as $emp)
+                    @if($emp->id != $leave->employee_id)
+                        <option value="{{ $emp->id }}" @selected($leave->coverage_employee_id == $emp->id)>{{ $emp->name }}</option>
+                    @endif
+                @endforeach
+            </select>
+        </div>
+
+        <div class="mb-3">
             <label class="form-label">السبب</label>
             <textarea name="reason" class="form-control" rows="4">{{ $leave->reason }}</textarea>
         </div>
 
         <div class="mb-3">
             <label class="form-label">الحالة</label>
-            <select name="status" class="form-select">
-                <option value="pending" {{ $leave->status == 'pending' ? 'selected' : '' }}>قيد الانتظار</option>
-                <option value="approved" {{ $leave->status == 'approved' ? 'selected' : '' }}>معتمد</option>
-                <option value="rejected" {{ $leave->status == 'rejected' ? 'selected' : '' }}>مرفوض</option>
-            </select>
+            <input type="hidden" name="status" value="pending">
+            <span class="badge badge-warning">قيد المراجعة</span>
         </div>
 
         <button class="btn btn-primary">تحديث</button>

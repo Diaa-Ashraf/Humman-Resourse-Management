@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('customers') || Schema::hasColumn('customers', 'deleted_at')) return;
         Schema::table('customers', function (Blueprint $table) {
             $table->timestamp('deleted_at')->nullable()->after('updated_at');
         });
@@ -21,6 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('customers') || !Schema::hasColumn('customers', 'deleted_at')) return;
         Schema::table('customers', function (Blueprint $table) {
             $table->dropColumn('deleted_at');
         });

@@ -17,7 +17,17 @@
             <select name="employee_id" class="form-select" required>
                 <option value="">اختر موظف</option>
                 @foreach($employees as $emp)
-                    <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                    <option value="{{ $emp->id }}" @selected(old('employee_id') == $emp->id)>{{ $emp->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">الموظف البديل لتغطية العمل (إذا تطلبت السياسة)</label>
+            <select name="coverage_employee_id" class="form-select">
+                <option value="">بدون بديل</option>
+                @foreach($employees as $emp)
+                    <option value="{{ $emp->id }}" @selected(old('coverage_employee_id') == $emp->id)>{{ $emp->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -49,11 +59,7 @@
 
         <div class="mb-3">
             <label class="form-label">الحالة</label>
-            <select name="status" class="form-select" required>
-                <option value="pending">قيد الانتظار</option>
-                <option value="approved">معتمد</option>
-                <option value="rejected">مرفوض</option>
-            </select>
+            <input type="hidden" name="status" value="pending">
         </div>
 
         <button class="btn btn-success">حفظ</button>

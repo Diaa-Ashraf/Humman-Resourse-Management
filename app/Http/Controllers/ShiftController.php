@@ -17,13 +17,14 @@ class ShiftController extends Controller
     // عرض كل الشيفتات
     public function index()
     {
-        $shifts = Shift::all();
+        $shifts = Shift::withCount('employees')->orderBy('start_time')->get();
         return view('dashboard.shifts.index', compact('shifts'));
     }
 
     // صفحة إنشاء شيفت جديد
     public function create()
     {
+        abort_unless(auth()->user()->can('store_shifts'), 403);
         return view('dashboard.shifts.create');
     }
 
@@ -31,10 +32,11 @@ class ShiftController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'shift_name' => 'required|string|unique:shifts,shift_name',
+            'shift_name' => 'required|string|max:255|unique:shifts,shift_name',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
-            'status' => 'required|in:open,closed'
+            'status' => 'required|in:open,closed',
+            'grace_minutes'=>'required|integer|between:0,240','break_minutes'=>'required|integer|between:0,480','work_days'=>'required|array|min:1','work_days.*'=>'integer|between:0,6','crosses_midnight'=>'required|boolean','overtime_multiplier'=>'required|numeric|between:0.5,5',
         ]);
 
         Shift::create($validated);
@@ -45,26 +47,21 @@ class ShiftController extends Controller
     // صفحة تعديل الشيفت
     public function edit(Shift $shift)
     {
+        abort_unless(auth()->user()->can('update_shifts'), 403);
         return view('dashboard.shifts.edit', compact('shift'));
     }
 
     // تحديث بيانات الشيفت
     public function update(Request $request, Shift $shift)
     {
+        $employeeCount = $shift->employees()->count();
         $validated = $request->validate([
-            'shift_name' => 'required|string|unique:shifts,shift_name,' . $shift->id,
-            'start_time' => 'required|date_format:H:i:s',  // تعديل هنا
-            'end_time' => 'required|date_format:H:i:s',    // تعديل هنا
-            'status' => 'required|in:open,closed'
+            'shift_name' => 'required|string|max:255|unique:shifts,shift_name,' . $shift->id,
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i',
+            'status' => $employeeCount || $shift->assignments()->exists() ? 'required|in:open' : 'required|in:open,closed',
+            'grace_minutes'=>'required|integer|between:0,240','break_minutes'=>'required|integer|between:0,480','work_days'=>'required|array|min:1','work_days.*'=>'integer|between:0,6','crosses_midnight'=>'required|boolean','overtime_multiplier'=>'required|numeric|between:0.5,5',
         ]);
-
-        if ($shift->status === 'open' && $validated['status'] === 'closed') {
-            // من مفتوح إلى مغلق
-            $shift->status = 'closed';
-        } elseif ($shift->status === 'closed' && $validated['status'] === 'open') {
-            // من مغلق إلى مفتوح
-            $shift->status = 'open';
-        }
 
         $shift->update($validated);
 
@@ -74,8 +71,13 @@ class ShiftController extends Controller
     // حذف الشيفت
     public function destroy(Shift $shift)
     {
-        if ($shift->status === 'open') {
-            return redirect()->route('shifts.index')->with('error', 'لا يمكن حذف شيفت مفتوح');
+        abort_unless(auth()->user()->can('delete_shifts'), 403);
+        if ($shift->status !== 'closed') {
+            return redirect()->route('shifts.index')->with('error', 'يرجى إيقاف الوردية قبل حذفها.');
+        }
+
+        if ($shift->employees()->exists() || $shift->assignments()->exists()) {
+            return redirect()->route('shifts.index')->withErrors(['shift' => 'لا يمكن حذف وردية مرتبطة بموظفين.']);
         }
 
         $shift->delete();

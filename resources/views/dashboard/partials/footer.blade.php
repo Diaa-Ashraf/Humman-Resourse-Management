@@ -1,8 +1,2 @@
-<footer class="footer footer-static footer-light navbar-border navbar-shadow">
-    <p class="clearfix blue-grey lighten-2 text-sm-center mb-0 px-2">
-      <span class="float-md-left d-block d-md-inline-block">Copyright &copy; 2018 <a class="text-bold-800 grey darken-2"
-          href="https://themeforest.net/user/pixinvent/portfolio?ref=pixinvent" target="_blank">PIXINVENT </a>, All
-        rights reserved. </span>
-      <span class="float-md-right d-block d-md-inline-blockd-none d-lg-block">Hand-crafted & Made with <i class="ft-heart pink"></i></span>
-    </p>
-</footer>
+<footer class="hr-footer"><span>نبت لإدارة الموارد البشرية</span><span>© {{ now()->year }} جميع الحقوق محفوظة</span></footer>
+<style>.hr-footer{display:flex;justify-content:space-between;gap:12px;margin:0 0 0 258px;padding:16px 28px;color:#8b9690;font-size:11px}@media(max-width:991.98px){.hr-footer{margin:0;padding:14px 18px}}</style>

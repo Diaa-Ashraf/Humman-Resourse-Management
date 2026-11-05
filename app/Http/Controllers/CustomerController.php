@@ -5,15 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Industry;
 use Illuminate\Http\Request;
+use App\Http\Requests\customer\StoreCustomerRequest;
+use App\Http\Requests\customer\UpdateCustomerRequest;
 
 class CustomerController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:show_customers')->only(['index', 'show']);
+        $this->middleware('permission:store_customers')->only(['create', 'store']);
+        $this->middleware('permission:update_customers')->only(['edit', 'update']);
+        $this->middleware('permission:delete_customers')->only(['destroy']);
+    }
+
+    // public function __construct()
+    // {
+    //     return[
+    //         new middleear ('permission:show_customers')->only(['index', 'show']),
+    //         new middleear ('permission:store_customers')->only(['create', 'store']),
+    //         new middleear ('permission:update_customers')->only(['edit', 'update']),
+    //         new middleear ('permission:delete_customers')->only(['destroy']),
+    //     ]
+        // }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $customers = Customer::with('industry')->latest()->paginate(10);
+        $customers = cache()->remember('customers.list', 60, function () {
+            return Customer::with('industry')->get();
+        });
+
         return view('dashboard.customers.index', compact('customers'));
     }
 
@@ -22,30 +45,22 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        $industries = Industry::all();
+        $industries = cache()->remember('industries', 60, function () {
+            return Industry::select('id', 'name')->get();
+        });
         return view('dashboard.customers.create', compact('industries'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:customers,email',
-            'phone' => 'required|string|max:20',
-            'address' => 'nullable|string',
-            'company' => 'nullable|string|max:255',
-            'industry_id' => 'nullable|exists:industries,id',
-            'status' => 'required|string|max:20',
-            'notes' => 'nullable|string'
-        ]);
-
-            Customer::create($validated);
+        Customer::create($request->validated());
         return redirect()->route('customers.index')
             ->with('success', 'تم إضافة العميل بنجاح');
     }
+
 
     /**
      * Display the specified resource.
@@ -61,27 +76,18 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        $industries = Industry::all();
+        $industries = Industry::select('id', 'name')->get();
         return view('dashboard.customers.edit', compact('customer', 'industries'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Customer $customer)
+    public function update(UpdateCustomerRequest $request, Customer $customer)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:customers,email,' . $customer->id,
-            'phone' => 'required|string|max:20',
-            'address' => 'nullable|string',
-            'company' => 'nullable|string|max:255',
-            'industry_id' => 'nullable|exists:industries,id',
-            'status' => 'required|in:active,inactive,potential',
-            'notes' => 'nullable|string'
-        ]);
+        $customer->update($request->validated());
 
-        $customer->update($validated);
+        cache()->forget('industries.list'); // Clear the cache for industries list
 
         return redirect()->route('customers.index')
             ->with('success', 'تم تحديث العميل بنجاح');
@@ -93,7 +99,7 @@ class CustomerController extends Controller
     public function destroy(Customer $customer)
     {
         $customer->delete();
-
+        cache()->forget('industries.list'); // Clear the cache for industries list
         return redirect()->route('customers.index')
             ->with('success', 'تم حذف العميل بنجاح');
     }

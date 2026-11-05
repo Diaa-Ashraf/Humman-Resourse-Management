@@ -1,5 +1,5 @@
 @extends('dashboard.master')
-@section('title' , __('shipping_management'))
+@section('title', 'لوحة المتابعة')
 @section('content')
-   @include('dashboard.partials.content')
+@include('dashboard.partials.content')
 @endsection

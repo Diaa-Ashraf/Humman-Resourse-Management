@@ -7,6 +7,13 @@ use Illuminate\Http\Request;
 
 class IndustryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:show_industries')->only(['index', 'show']);
+        $this->middleware('permission:store_industries')->only(['create', 'store']);
+        $this->middleware('permission:update_industries')->only(['edit', 'update']);
+        $this->middleware('permission:delete_industries')->only(['destroy']);
+    }
     // index
     public function index()
     {

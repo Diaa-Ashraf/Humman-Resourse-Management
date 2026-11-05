@@ -10,6 +10,13 @@ use Illuminate\Http\Request;
 
 class LeadController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:show_leads')->only(['index', 'show']);
+        $this->middleware('permission:store_leads')->only(['create', 'store']);
+        $this->middleware('permission:update_leads')->only(['edit', 'update']);
+        $this->middleware('permission:delete_leads')->only(['destroy']);
+    }
     // start function index
     public function index()
     {

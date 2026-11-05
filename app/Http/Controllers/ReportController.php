@@ -9,71 +9,86 @@ use App\Models\Deduction;
 use App\Models\Attendance;
 use App\Models\Leave;
 use App\Models\Section;
+use App\Models\Branch;
 use Carbon\Carbon;
 use App\Models\Employee;
+use App\Services\BranchAccess;
+use App\Models\{EmployeeDocument, EmployeeRequest, JobOpening, TrainingCourse, TrainingEnrollment};
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('permission:show_reports')->only(['index', 'export']);
+    }
     public function index(Request $request)
     {
         // Validate request inputs
         $validated = $request->validate([
             'from' => 'nullable|date_format:Y-m-d',
-            'to' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
             'employee_id' => 'nullable|exists:employees,id',
             'section_id' => 'nullable|exists:sections,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'report_type' => 'nullable|in:summary,detailed,attendance,performance'
         ]);
 
         // التواريخ الافتراضية
         $from = isset($validated['from']) ? Carbon::parse($validated['from']) : Carbon::now()->subMonth();
         $to = isset($validated['to']) ? Carbon::parse($validated['to']) : Carbon::now();
+        abort_if($to->lt($from), 422, 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية.');
         $employeeId = $validated['employee_id'] ?? null;
         $sectionId = $validated['section_id'] ?? null;
         $reportType = $validated['report_type'] ?? 'summary';
+        $branchId = $validated['branch_id'] ?? null;
 
         // جلب جميع الموظفين والأقسام لقائمة الاختيار
-        $employees = Employee::select('id', 'name', 'section_id')->with('section:id,name')->get();
-        $sections = Section::select('id', 'name')->get();
+        $access=app(BranchAccess::class);if($branchId)$access->assertBranch((int)$branchId,auth()->user());
+        $employees = $access->employees(Employee::query(),auth()->user())->select('id', 'name', 'section_id', 'branch_id')->with(['section:id,name', 'branch:id,name'])->orderBy('name')->get()
+            ->filter(fn($candidate) => (!$employeeId || $candidate->id == $employeeId) && (!$sectionId || $candidate->section_id == $sectionId) && (!$branchId || $candidate->branch_id == $branchId))
+            ->values();
+        $sections = Section::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('branch_id',$access->branchIds(auth()->user())))->select('id', 'name')->orderBy('name')->get();
+        $branches = Branch::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('id',$access->branchIds(auth()->user())))->select('id', 'name')->orderBy('name')->get();
 
         // بيانات الموظف المحدد
-        $employee = $employeeId ? Employee::with(['section', 'shift'])->find($employeeId) : null;
+        $employee = $employeeId
+            ? $access->employees(Employee::query(),auth()->user())->with(['section', 'shift'])->whereKey($employeeId)->when($sectionId, fn($query) => $query->where('section_id', $sectionId))->when($branchId, fn($query) => $query->where('branch_id', $branchId))->first()
+            : null;
 
         // Queries للرواتب والبونص والخصومات
-        $salaryQuery = Salary::with('employee:id,name,section_id')
+        $salaryQuery = Salary::with('employee:id,name,section_id')->with('employee.section:id,name')
             ->whereBetween('payment_date', [$from, $to]);
-        $bonusQuery = Bonus::with('employee:id,name,section_id')
+        $bonusQuery = Bonus::with('employee:id,name,section_id')->with('employee.section:id,name')
             ->where('status', 'approved')->whereBetween('bonus_date', [$from, $to]);
-        $deductionQuery = Deduction::with('employee:id,name,section_id')
+        $deductionQuery = Deduction::with('employee:id,name,section_id')->with('employee.section:id,name')
             ->where('status', 'approved')->whereBetween('deduction_date', [$from, $to]);
 
         // Queries للحضور والانصراف والإجازات
-        $attendanceQuery = Attendance::with('employee:id,name,section_id')
+        $attendanceQuery = Attendance::with('employee:id,name,section_id')->with('employee.section:id,name')
             ->whereBetween('attendance_date', [$from, $to]);
-        $leaveQuery = Leave::with(['employee:id,name,section_id', 'leaveType:id,name'])
-            ->whereBetween('start_date', [$from, $to])
-            ->orWhereBetween('end_date', [$from, $to]);
+        $leaveQuery = Leave::with(['employee:id,name,section_id', 'employee.section:id,name', 'leaveType:id,name'])
+            ->where(fn($query) => $query->whereBetween('start_date', [$from, $to])
+                ->orWhereBetween('end_date', [$from, $to]));
 
         // تطبيق الفلاتر
-        if ($employeeId) {
-            $salaryQuery->where('employee_id', $employeeId);
-            $bonusQuery->where('employee_id', $employeeId);
-            $deductionQuery->where('employee_id', $employeeId);
-            $attendanceQuery->where('employee_id', $employeeId);
-            $leaveQuery->where('employee_id', $employeeId);
+        $employeeIds = $access->employees(Employee::query(),auth()->user())
+            ->when($employeeId, fn($query) => $query->whereKey($employeeId))
+            ->when($sectionId, fn($query) => $query->where('section_id', $sectionId))
+            ->when($branchId, fn($query) => $query->where('branch_id', $branchId))
+            ->pluck('id');
+        foreach ([$salaryQuery, $bonusQuery, $deductionQuery, $attendanceQuery, $leaveQuery] as $query) {
+            $query->whereIn('employee_id', $employeeIds);
         }
-
-        if ($sectionId) {
-            $employeeIds = Employee::where('section_id', $sectionId)->pluck('id');
-            $salaryQuery->whereIn('employee_id', $employeeIds);
-            $bonusQuery->whereIn('employee_id', $employeeIds);
-            $deductionQuery->whereIn('employee_id', $employeeIds);
-            $attendanceQuery->whereIn('employee_id', $employeeIds);
-            $leaveQuery->whereIn('employee_id', $employeeIds);
-        }
+        $employees = $employees->filter(fn($candidate) =>
+            (!$employeeId || $candidate->id == $employeeId)
+            && (!$sectionId || $candidate->section_id == $sectionId)
+            && (!$branchId || $candidate->branch_id == $branchId)
+        )->values();
 
         // الحسابات الإجمالية
-        $totalSalaries = $salaryQuery->sum('amount');
+        $totalSalaries = $salaryQuery->sum('total');
         $totalBonuses = $bonusQuery->sum('amount');
         $totalDeductions = $deductionQuery->sum('amount');
 
@@ -109,22 +124,24 @@ class ReportController extends Controller
         $sectionStats = [];
         if (!$employeeId) {
             // Get sections with employee count and salary totals
-            $sectionsData = Section::with(['employees' => function($query) use ($from, $to) {
-                    $query->whereHas('salaries', function($q) use ($from, $to) {
+            $sectionsData = Section::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('branch_id',$access->branchIds(auth()->user())))->with(['employees' => function($query) use ($from, $to, $access) {
+                    $access->employees($query,auth()->user());$query->whereHas('salaries', function($q) use ($from, $to) {
                         $q->whereBetween('payment_date', [$from, $to]);
                     });
                 }])
                 ->with(['employees.salaries' => function($query) use ($from, $to) {
                     $query->whereBetween('payment_date', [$from, $to]);
                 }])
-                ->get();
+            ->when($sectionId, fn($query) => $query->whereKey($sectionId))
+            ->when(!empty($validated['branch_id']), fn($query) => $query->whereHas('employees', fn($employeeQuery) => $employeeQuery->where('branch_id', $validated['branch_id'])))
+            ->get();
 
             foreach ($sectionsData as $section) {
                 $employeeCount = $section->employees->count();
                 $totalSalary = 0;
                 
                 foreach ($section->employees as $employee) {
-                    $totalSalary += $employee->salaries->sum('amount');
+                    $totalSalary += $employee->salaries->sum('total');
                 }
                 
                 if ($employeeCount > 0) {
@@ -141,64 +158,74 @@ class ReportController extends Controller
         // أداء الموظفين
         $employeePerformance = [];
         if (!$employeeId) {
-            $employeesWithPerformance = Employee::select('id', 'name', 'section_id')
+            $employeesWithPerformance = $access->employees(Employee::query(),auth()->user())->select('id', 'name', 'section_id')
+                ->when($sectionId, fn($query) => $query->where('section_id', $sectionId))
+                ->when(!empty($validated['branch_id']), fn($query) => $query->where('branch_id', $validated['branch_id']))
                 ->with(['section:id,name'])
                 ->withCount(['attendances' => function($query) use ($from, $to) {
                     $query->whereBetween('attendance_date', [$from, $to]);
                 }])
                 ->withSum(['salaries' => function($query) use ($from, $to) {
                     $query->whereBetween('payment_date', [$from, $to]);
-                }], 'amount')
-                ->withSum(['bonuses' => function($query) use ($from, $to) {
-                    $query->whereBetween('bonus_date', [$from, $to])->where('status', 'approved');
-                }], 'amount')
-                ->withSum(['deductions' => function($query) use ($from, $to) {
-                    $query->whereBetween('deduction_date', [$from, $to])->where('status', 'approved');
-                }], 'amount')
+                }], 'total')
                 ->get();
 
             foreach ($employeesWithPerformance as $emp) {
-                $total = ($emp->salaries_sum_amount ?? 0) + ($emp->bonuses_sum_amount ?? 0) - ($emp->deductions_sum_amount ?? 0);
+                $total = ($emp->salaries_sum_total ?? 0);
                 $employeePerformance[] = [
                     'name' => $emp->name,
-                    'section' => $emp->section->name ?? 'N/A',
+                    'section' => $emp->section->name ?? 'غير محدد',
                     'attendance_days' => $emp->attendances_count,
                     'total_earnings' => $total,
-                    'base_salary' => $emp->salaries_sum_amount ?? 0,
-                    'bonuses' => $emp->bonuses_sum_amount ?? 0,
-                    'deductions' => $emp->deductions_sum_amount ?? 0
+                    'base_salary' => 0,
+                    'bonuses' => 0,
+                    'deductions' => 0
                 ];
             }
         } else {
             // Show performance for selected employee
-            $emp = Employee::with(['section:id,name'])
+            $emp = $access->employees(Employee::query(),auth()->user())->with(['section:id,name'])
+                ->when($sectionId, fn($query) => $query->where('section_id', $sectionId))
+                ->when(!empty($validated['branch_id']), fn($query) => $query->where('branch_id', $validated['branch_id']))
                 ->withCount(['attendances' => function($query) use ($from, $to) {
                     $query->whereBetween('attendance_date', [$from, $to]);
                 }])
                 ->withSum(['salaries' => function($query) use ($from, $to) {
                     $query->whereBetween('payment_date', [$from, $to]);
-                }], 'amount')
-                ->withSum(['bonuses' => function($query) use ($from, $to) {
-                    $query->whereBetween('bonus_date', [$from, $to])->where('status', 'approved');
-                }], 'amount')
-                ->withSum(['deductions' => function($query) use ($from, $to) {
-                    $query->whereBetween('deduction_date', [$from, $to])->where('status', 'approved');
-                }], 'amount')
+                }], 'total')
                 ->find($employeeId);
 
             if ($emp) {
-                $total = ($emp->salaries_sum_amount ?? 0) + ($emp->bonuses_sum_amount ?? 0) - ($emp->deductions_sum_amount ?? 0);
+                $total = ($emp->salaries_sum_total ?? 0);
                 $employeePerformance[] = [
                     'name' => $emp->name,
-                    'section' => $emp->section->name ?? 'N/A',
+                    'section' => $emp->section->name ?? 'غير محدد',
                     'attendance_days' => $emp->attendances_count,
                     'total_earnings' => $total,
-                    'base_salary' => $emp->salaries_sum_amount ?? 0,
-                    'bonuses' => $emp->bonuses_sum_amount ?? 0,
-                    'deductions' => $emp->deductions_sum_amount ?? 0
+                    'base_salary' => 0,
+                    'bonuses' => 0,
+                    'deductions' => 0
                 ];
             }
         }
+
+        $scopedEmployees=$access->employees(Employee::query(),auth()->user())->when($employeeId,fn($q)=>$q->whereKey($employeeId));
+        $headcountAtStart=(clone $scopedEmployees)->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->when($branchId,fn($q)=>$q->where('branch_id',$branchId))->whereDate('hire_date','<=',$from)->where(fn($q)=>$q->whereNull('termination_date')->orWhereDate('termination_date','>=',$from))->count();
+        $headcountAtEnd=(clone $scopedEmployees)->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->when($branchId,fn($q)=>$q->where('branch_id',$branchId))->whereDate('hire_date','<=',$to)->where(fn($q)=>$q->whereNull('termination_date')->orWhereDate('termination_date','>',$to))->count();
+        $terminations=$access->employees(Employee::query(),auth()->user())->whereBetween('termination_date',[$from->toDateString(),$to->toDateString()])->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->when($branchId,fn($q)=>$q->where('branch_id',$branchId))->count();
+        $turnoverRate=(($headcountAtStart+$headcountAtEnd)>0)?round($terminations/(($headcountAtStart+$headcountAtEnd)/2)*100,1):0;
+        $openVacancies=JobOpening::where('status','open')->where('approval_status','approved')->when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('branch_id',$access->branchIds(auth()->user())))->when($branchId,fn($q)=>$q->where('branch_id',$branchId))->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->sum('headcount');
+        $trainingCourses=TrainingCourse::whereBetween('starts_at',[$from->toDateString(),$to->toDateString()])->when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('branch_id',$access->branchIds(auth()->user())))->when($branchId,fn($q)=>$q->where('branch_id',$branchId));
+        $trainingCost=(clone $trainingCourses)->sum('cost');$trainingCourseCount=(clone $trainingCourses)->count();
+        $trainingHours=TrainingEnrollment::whereHas('employee',fn($q)=>$access->employees($q,auth()->user())->when($sectionId,fn($employeeQuery)=>$employeeQuery->where('section_id',$sectionId))->when($branchId,fn($employeeQuery)=>$employeeQuery->where('branch_id',$branchId)))->whereHas('course',fn($q)=>$q->whereBetween('starts_at',[$from->toDateString(),$to->toDateString()]))->sum('attended_hours');
+        $documentAlerts=$access->throughEmployee(EmployeeDocument::query(),auth()->user())->whereHas('employee',fn($q)=>$q->when($sectionId,fn($e)=>$e->where('section_id',$sectionId))->when($branchId,fn($e)=>$e->where('branch_id',$branchId)))->whereNotNull('expires_at')->whereDate('expires_at','<=',today()->addDays(30))->count();
+        $overdueRequests=$access->throughEmployee(EmployeeRequest::query(),auth()->user())->whereHas('employee',fn($q)=>$q->when($sectionId,fn($e)=>$e->where('section_id',$sectionId))->when($branchId,fn($e)=>$e->where('branch_id',$branchId)))->where('status','pending')->where('created_at','<',now()->subDays(5))->count();
+        $comparisonBranches=Branch::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('id',$access->branchIds(auth()->user())))->when($branchId,fn($q)=>$q->whereKey($branchId))->orderBy('name')->get();
+        $comparisonIds=$comparisonBranches->modelKeys();
+        $branchHeads=DB::table('employees')->select('branch_id',DB::raw('COUNT(*) as total'))->whereIn('branch_id',$comparisonIds)->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->when($employeeId,fn($q)=>$q->where('id',$employeeId))->where('status','active')->groupBy('branch_id')->pluck('total','branch_id');
+        $branchPayroll=DB::table('salaries')->join('employees','employees.id','=','salaries.employee_id')->select('employees.branch_id',DB::raw('SUM(salaries.total) as total'))->whereIn('employees.branch_id',$comparisonIds)->when($sectionId,fn($q)=>$q->where('employees.section_id',$sectionId))->when($employeeId,fn($q)=>$q->where('employees.id',$employeeId))->whereBetween('salaries.payment_date',[$from->toDateString(),$to->toDateString()])->groupBy('employees.branch_id')->pluck('total','branch_id');
+        $branchAttendance=DB::table('attendances')->join('employees','employees.id','=','attendances.employee_id')->select('employees.branch_id',DB::raw('COUNT(*) as total'),DB::raw("SUM(CASE WHEN attendances.status = 'absent' THEN 1 ELSE 0 END) as absent"),DB::raw("SUM(CASE WHEN attendances.status = 'late' THEN 1 ELSE 0 END) as late"))->whereIn('employees.branch_id',$comparisonIds)->when($sectionId,fn($q)=>$q->where('employees.section_id',$sectionId))->when($employeeId,fn($q)=>$q->where('employees.id',$employeeId))->whereBetween('attendances.attendance_date',[$from->toDateString(),$to->toDateString()])->groupBy('employees.branch_id')->get()->keyBy('branch_id');
+        $branchComparison=$comparisonBranches->map(function($branch)use($branchHeads,$branchPayroll,$branchAttendance){$attendance=$branchAttendance->get($branch->id);return ['name'=>$branch->name,'employees'=>(int)($branchHeads[$branch->id]??0),'payroll'=>(float)($branchPayroll[$branch->id]??0),'attendance'=>(int)($attendance->total??0),'absence'=>(int)($attendance->absent??0),'late'=>(int)($attendance->late??0)];});
 
         return view('dashboard.reports.index', compact(
             'from',
@@ -206,6 +233,7 @@ class ReportController extends Controller
             'employee',
             'employees',
             'sections',
+            'branches',
             'reportType',
             'totalSalaries',
             'totalBonuses',
@@ -225,45 +253,59 @@ class ReportController extends Controller
             'lateDays',
             'totalLeaveDays',
             'sectionStats',
-            'employeePerformance'
+            'employeePerformance',
+            'headcountAtEnd','terminations','turnoverRate','openVacancies','trainingCost','trainingCourseCount','trainingHours','documentAlerts','overdueRequests','branchComparison'
         ));
     }
 
     public function export(Request $request)
     {
-        $type = $request->input('type', 'excel');
+        $type = $request->validate(['type'=>'nullable|in:excel,pdf'])['type'] ?? 'excel';
         
         // Get the same data as index method
         $validated = $request->validate([
             'from' => 'nullable|date_format:Y-m-d',
-            'to' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
             'employee_id' => 'nullable|exists:employees,id',
             'section_id' => 'nullable|exists:sections,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'report_type' => 'nullable|in:summary,detailed,attendance,performance'
         ]);
 
         $from = isset($validated['from']) ? Carbon::parse($validated['from']) : Carbon::now()->subMonth();
         $to = isset($validated['to']) ? Carbon::parse($validated['to']) : Carbon::now();
+        abort_if($to->lt($from), 422, 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية.');
         $employeeId = $validated['employee_id'] ?? null;
         $sectionId = $validated['section_id'] ?? null;
+        $branchId = $validated['branch_id'] ?? null;
         $reportType = $validated['report_type'] ?? 'summary';
 
+        $access=app(BranchAccess::class);if($branchId)$access->assertBranch((int)$branchId,auth()->user());
+        $employees = $access->employees(Employee::query(),auth()->user())->select('id', 'name', 'section_id', 'branch_id')->with(['section:id,name', 'branch:id,name'])->orderBy('name')->get()
+            ->filter(fn($employee) => (!$employeeId || $employee->id == $employeeId) && (!$sectionId || $employee->section_id == $sectionId) && (!$branchId || $employee->branch_id == $branchId));
+        $sections = Section::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('branch_id',$access->branchIds(auth()->user())))->orderBy('name')->get();
+        $branches = Branch::when(!$access->isGlobal(auth()->user()),fn($q)=>$q->whereIn('id',$access->branchIds(auth()->user())))->orderBy('name')->get();
+
         // Get data (simplified for export)
-        $salaryQuery = Salary::with('employee:id,name,section_id')
+        $salaryQuery = Salary::with(['employee:id,name,section_id', 'employee.section:id,name'])
             ->whereBetween('payment_date', [$from, $to]);
-        $bonusQuery = Bonus::with('employee:id,name,section_id')
+        $bonusQuery = Bonus::with(['employee:id,name,section_id', 'employee.section:id,name'])
             ->where('status', 'approved')->whereBetween('bonus_date', [$from, $to]);
-        $deductionQuery = Deduction::with('employee:id,name,section_id')
+        $deductionQuery = Deduction::with(['employee:id,name,section_id', 'employee.section:id,name'])
             ->where('status', 'approved')->whereBetween('deduction_date', [$from, $to]);
 
-        if ($employeeId) {
-            $salaryQuery->where('employee_id', $employeeId);
-            $bonusQuery->where('employee_id', $employeeId);
-            $deductionQuery->where('employee_id', $employeeId);
-        }
+        $scopedEmployeeIds=$access->employees(Employee::query(),auth()->user())->when($employeeId,fn($q)=>$q->whereKey($employeeId))->when($sectionId,fn($q)=>$q->where('section_id',$sectionId))->when($branchId,fn($q)=>$q->where('branch_id',$branchId))->pluck('id');
+        $salaryQuery->whereIn('employee_id',$scopedEmployeeIds);$bonusQuery->whereIn('employee_id',$scopedEmployeeIds);$deductionQuery->whereIn('employee_id',$scopedEmployeeIds);
 
         if ($sectionId) {
-            $employeeIds = Employee::where('section_id', $sectionId)->pluck('id');
+            $employeeIds = $access->employees(Employee::query(),auth()->user())->where('section_id', $sectionId)->pluck('id');
+            $salaryQuery->whereIn('employee_id', $employeeIds);
+            $bonusQuery->whereIn('employee_id', $employeeIds);
+            $deductionQuery->whereIn('employee_id', $employeeIds);
+        }
+
+        if ($branchId) {
+            $employeeIds = $access->employees(Employee::query(),auth()->user())->where('branch_id', $branchId)->pluck('id');
             $salaryQuery->whereIn('employee_id', $employeeIds);
             $bonusQuery->whereIn('employee_id', $employeeIds);
             $deductionQuery->whereIn('employee_id', $employeeIds);
@@ -273,52 +315,38 @@ class ReportController extends Controller
         $bonuses = $bonusQuery->get();
         $deductions = $deductionQuery->get();
 
-        $totalSalaries = $salaries->sum('amount');
-        $totalBonuses = $bonuses->sum('amount');
-        $totalDeductions = $deductions->sum('amount');
+        $totalSalaries = $salaries->sum('total');
+        $totalBonuses = $bonusQuery->sum('amount');
+        $totalDeductions = $deductionQuery->sum('amount');
         $netPayment = $totalSalaries + $totalBonuses - $totalDeductions;
 
         if ($type == 'excel') {
-            // Create CSV content
-            $csvContent = "\xEF\xBB\xBF"; // UTF-8 BOM
-            $csvContent .= "تقرير الرواتب والمكافآت والخصومات\n";
-            $csvContent .= "الفترة: من " . $from->format('Y-m-d') . " إلى " . $to->format('Y-m-d') . "\n\n";
-            
-            $csvContent .= "ملخص مالي\n";
-            $csvContent .= "إجمالي الرواتب," . $totalSalaries . "\n";
-            $csvContent .= "إجمالي المكافآت," . $totalBonuses . "\n";
-            $csvContent .= "إجمالي الخصومات," . $totalDeductions . "\n";
-            $csvContent .= "الصافي," . $netPayment . "\n\n";
-            
-            $csvContent .= "تفاصيل الرواتب\n";
-            $csvContent .= "الموظف,القسم,المبلغ,تاريخ الدفع,ملاحظات\n";
-            foreach ($salaries as $salary) {
-                $csvContent .= '"' . $salary->employee->name . '","' .
-                    ($salary->employee->section->name ?? 'N/A') . '",' .
-                    $salary->amount . ',' .
-                    $salary->payment_date . ',"' .
-                    ($salary->notes ?? '') . '"' . "\n";
-            }
-            
-            $csvContent .= "\nتفاصيل المكافآت\n";
-            $csvContent .= "الموظف,القسم,المبلغ,السبب,التاريخ\n";
-            foreach ($bonuses as $bonus) {
-                $csvContent .= '"' . $bonus->employee->name . '","' .
-                    ($bonus->employee->section->name ?? 'N/A') . '",' .
-                    $bonus->amount . ',"' .
-                    $bonus->reason . '",' .
-                    $bonus->bonus_date . '"' . "\n";
-            }
-            
-            $csvContent .= "\nتفاصيل الخصومات\n";
-            $csvContent .= "الموظف,القسم,المبلغ,السبب,التاريخ\n";
-            foreach ($deductions as $deduction) {
-                $csvContent .= '"' . $deduction->employee->name . '","' .
-                    ($deduction->employee->section->name ?? 'N/A') . '",' .
-                    $deduction->amount . ',"' .
-                    $deduction->reason . '",' .
-                    $deduction->deduction_date . '"' . "\n";
-            }
+            $stream = fopen('php://temp', 'w+b');
+            fwrite($stream, "\xEF\xBB\xBF");
+            $writeRow = static fn (array $row) => fputcsv($stream, $row, ',', '"', '\\', "\r\n");
+            $writeRow(['تقرير الرواتب والمكافآت والخصومات']);
+            $writeRow(['الفترة', 'من '.$from->format('Y-m-d').' إلى '.$to->format('Y-m-d')]);
+            $writeRow([]);
+            $writeRow(['ملخص مالي']);
+            $writeRow(['إجمالي الرواتب', $totalSalaries]);
+            $writeRow(['إجمالي المكافآت', $totalBonuses]);
+            $writeRow(['إجمالي الخصومات', $totalDeductions]);
+            $writeRow(['الصافي', $netPayment]);
+            $writeRow([]);
+            $writeRow(['تفاصيل الرواتب']);
+            $writeRow(['الموظف', 'القسم', 'المبلغ', 'تاريخ الدفع', 'ملاحظات']);
+            foreach ($salaries as $salary) $writeRow([$salary->employee->name ?? '', $salary->employee->section->name ?? 'غير محدد', $salary->total, $salary->payment_date, $salary->notes ?? '']);
+            $writeRow([]);
+            $writeRow(['تفاصيل المكافآت']);
+            $writeRow(['الموظف', 'القسم', 'المبلغ', 'السبب', 'التاريخ']);
+            foreach ($bonuses as $bonus) $writeRow([$bonus->employee->name ?? '', $bonus->employee->section->name ?? 'غير محدد', $bonus->amount, $bonus->reason, $bonus->bonus_date]);
+            $writeRow([]);
+            $writeRow(['تفاصيل الخصومات']);
+            $writeRow(['الموظف', 'القسم', 'المبلغ', 'السبب', 'التاريخ']);
+            foreach ($deductions as $deduction) $writeRow([$deduction->employee->name ?? '', $deduction->employee->section->name ?? 'غير محدد', $deduction->amount, $deduction->reason, $deduction->deduction_date]);
+            rewind($stream);
+            $csvContent = stream_get_contents($stream);
+            fclose($stream);
 
             return response($csvContent)
                 ->header('Content-Type', 'text/csv; charset=UTF-8')
@@ -364,8 +392,8 @@ class ReportController extends Controller
                 foreach ($salaries as $salary) {
                     $html .= '<tr>
                         <td>' . $salary->employee->name . '</td>
-                        <td>' . ($salary->employee->section->name ?? 'N/A') . '</td>
-                        <td>' . number_format($salary->amount, 2) . '</td>
+                        <td>' . ($salary->employee->section->name ?? 'غير محدد') . '</td>
+                        <td>' . number_format($salary->total, 2) . '</td>
                         <td>' . $salary->payment_date . '</td>
                         <td>' . ($salary->notes ?? '-') . '</td>
                     </tr>';

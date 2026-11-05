@@ -25,6 +25,8 @@
 
   <!-- BEGIN VENDOR CSS-->
   <link rel="stylesheet" type="text/css" href="{{ asset('assets/assets-back/css-rtl/vendors.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ asset('assets/assets-back/css-rtl/plugins/extensions/toastr.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ asset('css/hrms-toasts.css') }}">
   <!-- END VENDOR CSS-->
 
   <!-- BEGIN MODERN CSS-->

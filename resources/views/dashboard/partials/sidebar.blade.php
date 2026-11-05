@@ -1,219 +1,35 @@
-<div class="main-menu menu-fixed menu-dark menu-accordion menu-shadow" data-scroll-to-active="true" style="font-family: 'Tajawal', sans-serif;">
-    <div class="main-menu-content">
-        <ul class="navigation navigation-main" id="main-menu-navigation" data-menu="menu-navigation">
-
-            <!-- Dashboard -->
-            <li class="nav-item">
-                <a href="{{ route('dashboard') }}">
-                    <i class="la la-home" style="color:#2ecc71;"></i>
-                    <span class="menu-title">الرئيسية</span>
-                </a>
-            </li>
-
-            <!-- Users -->
-            {{-- @can('show_users') --}}
-            <li class="nav-item">
-                <a href="#">
-                    <i class="ft-users" style="color:#9b59b6;"></i>
-                    <span class="menu-title">المستخدمين</span>
-                </a>
-                <ul class="menu-content">
-                     <li><a class="menu-item" href="{{ route('users.index') }}">عرض المستخدمين</a></li> 
-                     <li><a class="menu-item" href="{{ route('users.create') }}">إضافة مستخدم</a></li> 
-                </ul>
-            </li>
-
-            <!-- Sections -->
-            @can('show_sections')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="ft-layers" style="color:#0d6efd;"></i>
-                    <span class="menu-title">الأقسام</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('sections.index') }}">عرض الأقسام</a></li>
-                    @can('store_sections') <li><a class="menu-item" href="{{ route('sections.create') }}">إضافة قسم</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Shifts -->
-            @can('show_shifts')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-clock-o" style="color:#f39c12;"></i>
-                    <span class="menu-title">الورديات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('shifts.index') }}">عرض الورديات</a></li>
-                    @can('store_shifts') <li><a class="menu-item" href="{{ route('shifts.create') }}">إضافة وردية</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Employees -->
-            @can('show_employees')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="ft-user-check" style="color:#27ae60;"></i>
-                    <span class="menu-title">الموظفون</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('employees.index') }}">كل الموظفين</a></li>
-                    @can('store_employees') <li><a class="menu-item" href="{{ route('employees.create') }}">إضافة موظف</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Attendance -->
-            {{-- @can('show_attendance') --}}
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-calendar-check-o" style="color:#f1c40f;"></i>
-                    <span class="menu-title">الحضور والانصراف</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ url('/dashboard/attendance') }}">سجل الحضور</a></li>
-                </ul>
-            </li>
-            {{-- @endcan --}}
-
-            <!-- Bonuses -->
-            @can('show_bonuses')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-plus-circle" style="color:#8e44ad;"></i>
-                    <span class="menu-title">البدلات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('bonuses.index') }}">عرض البدلات</a></li>
-                    @can('store_bonuses') <li><a class="menu-item" href="{{ route('bonuses.create') }}">إضافة بدل</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Salaries -->
-            @can('show_salaries')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-money" style="color:#16a085;"></i>
-                    <span class="menu-title">الرواتب</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('salaries.index') }}">عرض الرواتب</a></li>
-                    @can('store_salaries') <li><a class="menu-item" href="{{ route('salaries.create') }}">إضافة راتب</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Leaves -->
-            @can('show_leaves')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-plane" style="color:#2980b9;"></i>
-                    <span class="menu-title">الإجازات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('leaves.index') }}">عرض الإجازات</a></li>
-                    <li><a class="menu-item" href="{{ route('leaves.create') }}">طلب إجازة</a></li>
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Leave Types -->
-            @can('show_leave_types')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-list-alt" style="color:#c0392b;"></i>
-                    <span class="menu-title">أنواع الإجازات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('leave-types.index') }}">عرض الأنواع</a></li>
-                    @can('store_leave_types') <li><a class="menu-item" href="{{ route('leave-types.create') }}">إضافة نوع</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Customers -->
-            @can('show_customers')
-            <li class="nav-item">
-                <a href="#">
-<i class="la la-users"></i>
-                     <span class="menu-title">العملاء</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('customers.index') }}">عرض العملاء</a></li>
-                    @can('store_customers') <li><a class="menu-item" href="{{ route('customers.create') }}">إضافة عميل</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Deductions -->
-            @can('show_deductions')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-minus-circle" style="color:#e74c3c;"></i>
-                    <span class="menu-title">الخصومات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('deductions.index') }}">عرض الخصومات</a></li>
-                    @can('store_deductions') <li><a class="menu-item" href="{{ route('deductions.create') }}">إضافة خصم</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Industries -->
-            @can('show_industries')
-            <li class="nav-item">
-                <a href="#">
-                    <i class="la la-industry" style="color:#6f42c1;"></i>
-                    <span class="menu-title">التخصصات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('industry.index') }}">عرض التخصص</a></li>
-                    @can('store_industries') <li><a class="menu-item" href="{{ route('industry.create') }}">إضافة تخصص</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Leads -->
-            @can('show_leads')
-            <li class="nav-item">
-                <a href="#">
-<i class="la la-user-plus"></i>
-                    <span class="menu-title">العملاء المقترحون</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('leads.index') }}">عرض العملاء</a></li>
-                    @can('store_leads') <li><a class="menu-item" href="{{ route('leads.create') }}">إضافة عميل مقترح</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Visits -->
-            @can('show_visits')
-            <li class="nav-item">
-                <a href="#">
-<i class="la la-map-marker"></i>
-                    <span class="menu-title">الزيارات</span>
-                </a>
-                <ul class="menu-content">
-                    <li><a class="menu-item" href="{{ route('visits.index') }}">عرض الزيارات</a></li>
-                    @can('store_visits') <li><a class="menu-item" href="{{ route('visits.create') }}">إضافة زياره</a></li> @endcan
-                </ul>
-            </li>
-            @endcan
-
-            <!-- Reports -->
-            @can('show_reports')
-            <li class="nav-item">
-                <a href="{{ route('reports.index') }}">
-                    <i class="la la-file-text" style="color:#3498db;"></i>
-                    <span class="menu-title">تقارير الموارد البشرية</span>
-                </a>
-            </li>
-            @endcan
-
-        </ul>
-    </div>
+<div class="hr-sidebar" data-hr-sidebar>
+    <div class="hr-side-label">القائمة الرئيسية</div>
+    <a class="hr-side-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="la la-th-large"></i><span>لوحة المتابعة</span></a>
+    @canany(['employee_portal','show_employees','show_sections','show_branches','show_shifts','manage_shift_assignments','show_attendances','show_leaves','review_leaves','show_leave_types','manage_leave_balances','show_salaries','review_payroll','approve_payroll','close_payroll','manage_salary_components','show_advances','review_advances','store_advances','show_bonuses','review_bonuses','show_deductions','review_deductions','show_recruitment','approve_recruitment','show_performance','show_training','show_employee_documents','show_internal_comms','manage_internal_comms','review_employee_requests'])<div class="hr-side-label">إدارة الموارد البشرية</div>@endcanany
+    @can('show_employees')<a class="hr-side-link {{ request()->routeIs('employees.*') ? 'active' : '' }}" href="{{ route('employees.index') }}"><i class="la la-users"></i><span>ملفات الموظفين</span></a>@endcan
+    @can('show_branches')<a class="hr-side-link {{ request()->routeIs('branches.*') ? 'active' : '' }}" href="{{ route('branches.index') }}"><i class="la la-map-marker"></i><span>الفروع</span></a>@endcan
+    @can('show_sections')<a class="hr-side-link {{ request()->routeIs('sections.*') ? 'active' : '' }}" href="{{ route('sections.index') }}"><i class="la la-sitemap"></i><span>الأقسام</span></a>@endcan
+    @can('show_recruitment')<a class="hr-side-link {{ request()->routeIs('recruitment.*') ? 'active' : '' }}" href="{{ route('recruitment.index') }}"><i class="la la-user-plus"></i><span>التوظيف والمرشحون</span></a>@endcan
+    @can('show_employee_documents')<a class="hr-side-link {{ request()->routeIs('employee-documents.*') ? 'active' : '' }}" href="{{ route('employee-documents.index') }}"><i class="la la-folder-open"></i><span>مستندات الموظفين</span></a>@endcan
+    @can('show_performance')<a class="hr-side-link {{ request()->routeIs('performance.*') ? 'active' : '' }}" href="{{ route('performance.index') }}"><i class="la la-line-chart"></i><span>تقييم الأداء</span></a>@endcan
+    @can('show_training')<a class="hr-side-link {{ request()->routeIs('training.*') ? 'active' : '' }}" href="{{ route('training.index') }}"><i class="la la-graduation-cap"></i><span>التدريب والتطوير</span></a>@endcan
+    @canany(['show_internal_comms','manage_internal_comms'])<a class="hr-side-link {{ request()->routeIs('internal-comms.*') ? 'active' : '' }}" href="{{ route('internal-comms.index') }}"><i class="la la-bullhorn"></i><span>التواصل الداخلي</span></a>@endcanany
+    @can('review_employee_requests')<a class="hr-side-link {{ request()->routeIs('employee-requests.*') ? 'active' : '' }}" href="{{ route('employee-requests.index') }}"><i class="la la-inbox"></i><span>طلبات الموظفين</span></a>@endcan
+    @can('employee_portal')<a class="hr-side-link {{ request()->routeIs('employee-portal.*') ? 'active' : '' }}" href="{{ route('employee-portal.index') }}"><i class="la la-user"></i><span>بوابة الموظف</span></a>@endcan
+    @can('show_shifts')<a class="hr-side-link {{ request()->routeIs('shifts.*') ? 'active' : '' }}" href="{{ route('shifts.index') }}"><i class="la la-clock-o"></i><span>الورديات</span></a>@endcan
+    @can('manage_shift_assignments')<a class="hr-side-link {{ request()->routeIs('shift-assignments.*') ? 'active' : '' }}" href="{{ route('shift-assignments.index') }}"><i class="la la-calendar"></i><span>جدولة الورديات</span></a>@endcan
+    @can('show_attendances')<a class="hr-side-link {{ request()->routeIs('attendances.*') ? 'active' : '' }}" href="{{ route('attendances.index') }}"><i class="la la-calendar-check-o"></i><span>الحضور والانصراف</span></a>@endcan
+    @canany(['show_leaves','review_leaves'])<a class="hr-side-link {{ request()->routeIs('leaves.*') ? 'active' : '' }}" href="{{ route('leaves.index') }}"><i class="la la-calendar"></i><span>الإجازات</span></a>@endcanany
+    @can('show_leave_types')<a class="hr-side-link {{ request()->routeIs('leave-types.*') ? 'active' : '' }}" href="{{ route('leave-types.index') }}"><i class="la la-list-alt"></i><span>أنواع الإجازات</span></a>@endcan
+    @can('manage_leave_balances')<a class="hr-side-link {{ request()->routeIs('leave-balances.*') ? 'active' : '' }}" href="{{ route('leave-balances.index') }}"><i class="la la-calendar-o"></i><span>أرصدة الإجازات</span></a>@endcan
+    @can('manage_leave_balances')<a class="hr-side-link {{ request()->routeIs('holiday-calendar.*') ? 'active' : '' }}" href="{{ route('holiday-calendar.index') }}"><i class="la la-calendar-check-o"></i><span>تقويم العطلات الرسمية</span></a>@endcan
+    @canany(['show_salaries','pay_salaries'])<a class="hr-side-link {{ request()->routeIs('salaries.*') ? 'active' : '' }}" href="{{ route('salaries.index') }}"><i class="la la-money"></i><span>الرواتب</span></a>@endcanany
+    @canany(['show_salaries','review_payroll','approve_payroll','close_payroll'])<a class="hr-side-link {{ request()->routeIs('payroll.*') ? 'active' : '' }}" href="{{ route('payroll.index') }}"><i class="la la-calculator"></i><span>دورة مسير الرواتب</span></a>@endcanany
+    @can('manage_salary_components')<a class="hr-side-link {{ request()->routeIs('salary-components.*') ? 'active' : '' }}" href="{{ route('salary-components.index') }}"><i class="la la-list-alt"></i><span>مكونات الرواتب</span></a>@endcan
+    @canany(['show_advances','review_advances'])<a class="hr-side-link {{ request()->routeIs('advances.*') ? 'active' : '' }}" href="{{ route('advances.index') }}"><i class="la la-credit-card"></i><span>السلف والقروض</span></a>@endcanany
+    @canany(['show_bonuses','review_bonuses'])<a class="hr-side-link {{ request()->routeIs('bonuses.*') ? 'active' : '' }}" href="{{ route('bonuses.index') }}"><i class="la la-gift"></i><span>المكافآت والبدلات</span></a>@endcanany
+    @canany(['show_deductions','review_deductions'])<a class="hr-side-link {{ request()->routeIs('deductions.*') ? 'active' : '' }}" href="{{ route('deductions.index') }}"><i class="la la-minus-circle"></i><span>الخصومات</span></a>@endcanany
+    @canany(['show_users','assign_roles'])<div class="hr-side-label">إدارة النظام</div><a class="hr-side-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><i class="la la-user-secret"></i><span>المستخدمون والصلاحيات</span></a>@endcanany
+    @can('show_reports')<a class="hr-side-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="la la-bar-chart"></i><span>تقارير الموارد البشرية</span></a>@endcan
+    @can('view_audit_logs')<a class="hr-side-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}"><i class="la la-history"></i><span>سجل التدقيق</span></a>@endcan
+    <a class="hr-side-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}"><i class="la la-bell"></i><span>الإشعارات</span></a>
+    @can('manage_retention')<a class="hr-side-link {{ request()->routeIs('retention.*') ? 'active' : '' }}" href="{{ route('retention.index') }}"><i class="la la-database"></i><span>الاحتفاظ والخصوصية</span></a>@endcan
+    <div class="hr-side-footer"><span class="hr-status-dot"></span> النظام يعمل بكفاءة</div>
 </div>
+<div class="hr-sidebar-overlay" data-hr-menu-toggle></div>

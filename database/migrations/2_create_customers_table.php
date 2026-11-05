@@ -25,7 +25,9 @@ return new class extends Migration
             $table->unsignedBigInteger('sales_id'); // المندوب المسؤول
             $table->foreign('sales_id')->references('id')->on('employees')->onDelete('cascade');
 
-        $table->enum('status', ['Active', 'Inactive', 'Waiting Confirmation'])->default('Waiting Confirmation')->change();
+            // Define the column once during table creation; change() is only
+            // valid for an existing column and breaks fresh SQLite installs.
+            $table->enum('status', ['Active', 'Inactive', 'Waiting Confirmation'])->default('Waiting Confirmation');
     
             $table->timestamps();
         });
