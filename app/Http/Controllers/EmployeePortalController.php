@@ -1,24 +1,76 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{EmployeeRequest,InternalAnnouncement,Leave,LeaveType,PerformanceReview};
+use App\Models\{Branch, Employee, EmployeeRequest, InternalAnnouncement, Leave, LeaveType, PerformanceReview, Section, Shift};
 use App\Services\LeaveBalanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class EmployeePortalController extends Controller
 {
-    private function employee()
+    private function resolveEmployee(bool $strict = true): ?Employee
     {
-        abort_unless(auth()->user()->can('employee_portal'),403);
-        $employee=auth()->user()->employee ?? abort(403,'لم يتم ربط هذا الحساب بملف موظف. راجع مسؤول الموارد البشرية.');
-        abort_unless($employee->status==='active',403,'بوابة الخدمة الذاتية متاحة للموظف النشط فقط.');
+        abort_unless(auth()->user()->can('employee_portal'), 403);
+        $user = auth()->user();
+        $employee = $user->employee;
+
+        // دعم السوبر أدمن: ضمان وجود وتفعيل ملف موظف نشط تلقائياً
+        if ($user->hasRole('Super Admin')) {
+            if (!$employee) {
+                $mainBranch = Branch::first();
+                $mainSection = Section::first();
+                $mainShift = Shift::first();
+
+                $employee = Employee::create([
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => '01000000000',
+                    'position' => 'المدير العام (Super Admin)',
+                    'section_id' => $mainSection?->id,
+                    'branch_id' => $mainBranch?->id,
+                    'shift_id' => $mainShift?->id,
+                    'status' => 'active',
+                    'hire_date' => today(),
+                    'base_salary' => 0,
+                    'employment_type' => 'دوام كامل',
+                    'insurance_enabled' => false,
+                    'tax_enabled' => false,
+                ]);
+            } elseif ($employee->status !== 'active') {
+                $employee->update(['status' => 'active']);
+            }
+        }
+
+        if (!$employee || $employee->status !== 'active') {
+            if ($strict) {
+                if (!$employee) {
+                    abort(403, 'لم يتم ربط هذا الحساب بملف موظف. راجع مسؤول الموارد البشرية.');
+                }
+                abort(403, 'بوابة الخدمة الذاتية متاحة للموظف النشط فقط.');
+            }
+            return null;
+        }
+
         return $employee;
+    }
+
+    private function employee(): Employee
+    {
+        return $this->resolveEmployee(strict: true);
     }
 
     public function index()
     {
-        $employee=$this->employee();
+        $employee = $this->resolveEmployee(strict: false);
+        if (!$employee) {
+            $user = auth()->user();
+            return view('dashboard.employee-portal.inactive', [
+                'user' => $user,
+                'employee' => $user->employee,
+            ]);
+        }
+
         $announcements=InternalAnnouncement::where('status','published')->where(fn($q)=>$q->whereNull('expires_at')->orWhere('expires_at','>=',now()))
             ->where(fn($q)=>$q->whereNull('branch_id')->orWhere('branch_id',$employee->branch_id))
             ->where(fn($q)=>$q->whereNull('section_id')->orWhere('section_id',$employee->section_id))
@@ -28,7 +80,7 @@ class EmployeePortalController extends Controller
         $requests=EmployeeRequest::where('employee_id',$employee->id)->latest()->limit(20)->get();
         $leaves=Leave::with('leaveType')->where('employee_id',$employee->id)->latest('start_date')->limit(20)->get();
         $leaveTypes=LeaveType::where('status','active')->orderBy('name')->get();
-        $employees=\App\Models\Employee::where('status','active')->where('id','!=',$employee->id)->orderBy('name')->get(['id','name']);
+        $employees=Employee::where('status','active')->where('id','!=',$employee->id)->orderBy('name')->get(['id','name']);
         return view('dashboard.employee-portal.index',compact('employee','announcements','reviews','requests','leaves','leaveTypes','employees'));
     }
 

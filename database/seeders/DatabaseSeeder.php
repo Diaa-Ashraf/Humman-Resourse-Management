@@ -129,5 +129,50 @@ class DatabaseSeeder extends Seeder
             LeaveType::create(['name' => 'إجازة مرضية', 'max_days' => 14, 'status' => 'active', 'description' => 'تقرير طبي معتمد']);
             LeaveType::create(['name' => 'إجازة عارضة', 'max_days' => 7, 'status' => 'active', 'description' => 'ظروف طارئة بحد أقصى يومين متتاليين']);
         }
+
+        // 6. ربط حسابات الإدارة الأساسية بملفات موظفين نشطة لتفعيل بوابة الموظف
+        $firstBranch = Branch::first();
+        $hrSection = Section::where('name', 'like', '%موارد بشرية%')->first() ?? Section::first();
+        $firstShift = Shift::first();
+
+        $adminUser = User::where('email', $adminEmail)->first();
+        if ($adminUser && !$adminUser->employee()->exists()) {
+            \App\Models\Employee::create([
+                'user_id' => $adminUser->id,
+                'name' => $adminUser->name,
+                'email' => $adminUser->email,
+                'phone' => '01000000001',
+                'position' => 'المدير العام (Super Admin)',
+                'section_id' => $hrSection?->id,
+                'branch_id' => $firstBranch?->id,
+                'shift_id' => $firstShift?->id,
+                'status' => 'active',
+                'hire_date' => today(),
+                'base_salary' => 0,
+                'employment_type' => 'دوام كامل',
+                'insurance_enabled' => false,
+                'tax_enabled' => false,
+            ]);
+        }
+
+        $hrUser = User::where('email', 'hr@gmail.com')->first();
+        if ($hrUser && !$hrUser->employee()->exists()) {
+            \App\Models\Employee::create([
+                'user_id' => $hrUser->id,
+                'name' => $hrUser->name,
+                'email' => $hrUser->email,
+                'phone' => '01000000002',
+                'position' => 'مسؤول الموارد البشرية',
+                'section_id' => $hrSection?->id,
+                'branch_id' => $firstBranch?->id,
+                'shift_id' => $firstShift?->id,
+                'status' => 'active',
+                'hire_date' => today(),
+                'base_salary' => 0,
+                'employment_type' => 'دوام كامل',
+                'insurance_enabled' => false,
+                'tax_enabled' => false,
+            ]);
+        }
     }
 }
