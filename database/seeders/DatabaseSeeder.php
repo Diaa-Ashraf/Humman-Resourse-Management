@@ -21,16 +21,41 @@ class DatabaseSeeder extends Seeder
         $this->call(PayrollPolicySeeder::class);
         $this->call(GovernancePolicySeeder::class);
 
-        // Optional first administrator provisioning for installations with no existing account.
-        $email = env('HRMS_ADMIN_EMAIL');
-        $password = env('HRMS_ADMIN_PASSWORD');
-        if ($email && $password && !User::where('email', $email)->exists() && User::count() < 10) {
+        // إنشاء الحسابات الأساسية للوحة التحكم
+        $adminEmail = env('HRMS_ADMIN_EMAIL', 'superadmin@gmail.com');
+        $adminPassword = env('HRMS_ADMIN_PASSWORD', '12345678');
+        $adminName = env('HRMS_ADMIN_NAME', 'Super Admin');
+
+        if (!User::where('email', $adminEmail)->exists()) {
             $admin = User::create([
-                'name' => env('HRMS_ADMIN_NAME', 'مدير النظام'),
-                'email' => $email,
-                'password' => Hash::make($password),
+                'name' => $adminName,
+                'email' => $adminEmail,
+                'password' => Hash::make($adminPassword),
             ]);
-            $admin->assignRole(Role::findByName('Super Admin', 'web'));
+            $adminRole = Role::findByName('Super Admin', 'web');
+            $admin->assignRole($adminRole);
+        }
+
+        // حساب مسؤول الموارد البشرية التجريبي
+        if (!User::where('email', 'hr@gmail.com')->exists()) {
+            $hr = User::create([
+                'name' => 'مسؤول الموارد البشرية',
+                'email' => 'hr@gmail.com',
+                'password' => Hash::make('12345678'),
+            ]);
+            $hrRole = Role::findByName('HR', 'web');
+            $hr->assignRole($hrRole);
+        }
+
+        // حساب المدير التجريبي
+        if (!User::where('email', 'manager@gmail.com')->exists()) {
+            $manager = User::create([
+                'name' => 'المدير المباشر',
+                'email' => 'manager@gmail.com',
+                'password' => Hash::make('12345678'),
+            ]);
+            $managerRole = Role::findByName('Manager', 'web');
+            $manager->assignRole($managerRole);
         }
     }
 }
