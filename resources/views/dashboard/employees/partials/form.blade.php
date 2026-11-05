@@ -26,10 +26,81 @@
         </div></div>
         <div class="card-header border-top"><strong>بيانات العمل والهيكل التنظيمي</strong></div><div class="card-body"><div class="row g-3">
             <div class="col-md-6 col-xl-4"><label class="form-label">المسمى الوظيفي *</label><input class="form-control" name="position" required value="{{ old('position',$current?->position) }}"></div>
-            <div class="col-md-6 col-xl-4"><label class="form-label">الفرع</label><select class="form-select @error('branch_id') is-invalid @enderror" id="employee-branch" name="branch_id"><option value="">اختر الفرع</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected(old('branch_id',$current?->branch_id)==$branch->id)>{{ $branch->name }}</option>@endforeach</select>@error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-            <div class="col-md-6 col-xl-4"><label class="form-label">القسم *</label><select class="form-select @error('section_id') is-invalid @enderror" id="employee-section" name="section_id" required><option value="">اختر القسم</option>@foreach($sections as $section)<option value="{{ $section->id }}" data-branch-id="{{ $section->branch_id ?? '' }}" @selected(old('section_id',$current?->section_id)==$section->id)>{{ $section->name }}{{ $section->branch ? ' — '.$section->branch->name : '' }}</option>@endforeach</select><small class="form-text text-muted">تتغير الأقسام حسب الفرع المختار.</small>@error('section_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror</div>
-            <div class="col-md-6 col-xl-4"><label class="form-label">المدير المباشر</label><select class="form-select" name="manager_employee_id"><option value="">بدون مدير محدد</option>@foreach($managers as $manager)<option value="{{ $manager->id }}" @selected(old('manager_employee_id',$current?->manager_employee_id)==$manager->id)>{{ $manager->name }}</option>@endforeach</select></div>
-            <div class="col-md-6 col-xl-4"><label class="form-label">الوردية *</label><select class="form-select" name="shift_id" required><option value="">اختر الوردية</option>@foreach($shifts as $shift)<option value="{{ $shift->id }}" @selected(old('shift_id',$current?->shift_id)==$shift->id)>{{ $shift->shift_name }}</option>@endforeach</select></div>
+            <div class="col-md-6 col-xl-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">الفرع</label>
+                    @can('store_branches')
+                        <a href="{{ route('branches.create') }}" target="_blank" class="small text-primary text-decoration-none">
+                            <i class="la la-plus"></i> إضافة فرع
+                        </a>
+                    @endcan
+                </div>
+                <select class="form-select @error('branch_id') is-invalid @enderror" id="employee-branch" name="branch_id">
+                    <option value="">اختر الفرع</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" @selected(old('branch_id', $current?->branch_id) == $branch->id)>
+                            {{ $branch->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('branch_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">القسم *</label>
+                    @can('store_sections')
+                        <a href="{{ route('sections.create') }}" target="_blank" class="small text-primary text-decoration-none">
+                            <i class="la la-plus"></i> إضافة قسم
+                        </a>
+                    @endcan
+                </div>
+                <select class="form-select @error('section_id') is-invalid @enderror" id="employee-section" name="section_id" required>
+                    <option value="">اختر القسم</option>
+                    @foreach($sections as $section)
+                        <option value="{{ $section->id }}" data-branch-id="{{ $section->branch_id ?? '' }}" @selected(old('section_id', $current?->section_id) == $section->id)>
+                            {{ $section->name }}{{ $section->branch ? ' — ' . $section->branch->name : '' }}
+                        </option>
+                    @endforeach
+                </select>
+                <small class="form-text text-muted">تتغير الأقسام حسب الفرع المختار.</small>
+                @error('section_id')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <label class="form-label">المدير المباشر</label>
+                <select class="form-select" name="manager_employee_id">
+                    <option value="">بدون مدير محدد</option>
+                    @foreach($managers as $manager)
+                        <option value="{{ $manager->id }}" @selected(old('manager_employee_id', $current?->manager_employee_id) == $manager->id)>
+                            {{ $manager->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">الوردية *</label>
+                    @can('store_shifts')
+                        <a href="{{ route('shifts.create') }}" target="_blank" class="small text-primary text-decoration-none">
+                            <i class="la la-plus"></i> إضافة وردية
+                        </a>
+                    @endcan
+                </div>
+                <select class="form-select @error('shift_id') is-invalid @enderror" name="shift_id" required>
+                    <option value="">اختر الوردية</option>
+                    @foreach($shifts as $shift)
+                        <option value="{{ $shift->id }}" @selected(old('shift_id', $current?->shift_id) == $shift->id)>
+                            {{ $shift->shift_name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('shift_id')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+            </div>
             <div class="col-md-6 col-xl-4"><label class="form-label">نوع التوظيف *</label><select class="form-select" name="employment_type" required>@foreach(['دوام كامل','دوام جزئي','موسمي','مؤقت'] as $type)<option value="{{ $type }}" @selected(old('employment_type',$current?->employment_type ?? 'دوام كامل')===$type)>{{ $type }}</option>@endforeach</select></div>
             <div class="col-md-6 col-xl-4"><label class="form-label">الحالة *</label><select class="form-select" name="status"><option value="active" @selected(old('status',$current?->status ?? 'active')==='active')>نشط</option><option value="inactive" @selected(old('status',$current?->status)==='inactive')>غير نشط</option></select></div>
             <div class="col-md-6 col-xl-4"><label class="form-label">تاريخ التعيين *</label><input type="date" class="form-control" name="hire_date" required value="{{ old('hire_date',$current?->hire_date?->format('Y-m-d')) }}"></div>

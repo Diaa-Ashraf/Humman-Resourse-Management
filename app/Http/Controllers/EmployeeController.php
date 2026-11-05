@@ -50,8 +50,24 @@ class EmployeeController extends Controller
     {
         $access=app(BranchAccess::class);$user=auth()->user();
         abort_if(Employee::count() >= self::EMPLOYEE_LIMIT, 403, 'وصل النظام إلى الحد المحدد وهو 1000 موظف.');
-        $sections = Section::where('is_active',true)->when(!$access->isGlobal($user),fn($q)=>$q->whereIn('branch_id',$access->branchIds($user)))->orderBy('name')->get();
+        $sections = Section::where('is_active', true)->when(!$access->isGlobal($user), fn($q) => $q->whereIn('branch_id', $access->branchIds($user)))->orderBy('name')->get();
         $shifts = Shift::where('status', 'open')->orderBy('start_time')->get();
+        if ($shifts->isEmpty()) {
+            $shifts = Shift::orderBy('start_time')->get();
+        }
+        if ($shifts->isEmpty()) {
+            $defaultShift = Shift::create([
+                'shift_name' => 'الوردية الصباحية (الافتراضية)',
+                'start_time' => '09:00:00',
+                'end_time' => '17:00:00',
+                'status' => 'open',
+                'grace_minutes' => 15,
+                'break_minutes' => 60,
+                'work_days' => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                'overtime_multiplier' => 1.5,
+            ]);
+            $shifts = collect([$defaultShift]);
+        }
         $branches = ($access->isGlobal($user)?Branch::where('is_active', true):Branch::whereIn('id',$access->branchIds($user)))->orderBy('name')->get();
         $managers = $access->employees(Employee::query(),$user)->where('status','active')->orderBy('name')->get();
         $users=User::with('employee')->orderBy('name')->get();
